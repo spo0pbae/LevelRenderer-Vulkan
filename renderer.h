@@ -5,23 +5,23 @@
 class Renderer
 {
 	// proxy handles
-	GW::SYSTEM::GWindow win;
-	GW::GRAPHICS::GVulkanSurface vlk;
-	GW::CORE::GEventReceiver shutdown;
-	GW::INPUT::GInput m_inputProxy;
-	GW::INPUT::GController m_controllerProxy;
-	GW::MATH::GMatrix m_mxMathProxy;
+	GW::SYSTEM::GWindow				win;
+	GW::GRAPHICS::GVulkanSurface	vlk;
+	GW::CORE::GEventReceiver		shutdown;
+	GW::INPUT::GInput				m_inputProxy;
+	GW::INPUT::GController			m_controllerProxy;
+	GW::MATH::GMatrix				m_mxMathProxy;
 
-	VkDevice device							= nullptr;
-	VkPipeline pipeline						= nullptr;
-	VkPipelineLayout pipelineLayout			= nullptr;
-	Model modelPx; 
-	std::vector<Model> models;
+	VkDevice						device			= nullptr;
+	VkPipeline						pipeline		= nullptr;
+	VkPipelineLayout				pipelineLayout	= nullptr;
+	Model							modelPx; 
+	std::vector<Model>				models;
 	XTime t;
 
 	// taking this out added complication!
-	VkShaderModule m_vertexShader			= nullptr;
-	VkShaderModule m_pixelShader			= nullptr;
+	VkShaderModule m_vertexShader					= nullptr;
+	VkShaderModule m_pixelShader					= nullptr;
 public:
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	{
@@ -55,19 +55,19 @@ public:
 		vlk.GetSwapchainImageCount(maxFrames);
 
 		/* INITIALIZE VERTEX BUFFERS, INDEX BUFFERS, AND STORAGE BUFFERS*/
-		for (auto &m : models)
-		{
-			// for each model, initialize their buffers and descriptor sets
-			m.CreateVertexBuffer(device, physicalDevice);
-			m.CreateIndexBuffer(device, physicalDevice);
-			m.CreateStorageBuffer(device, physicalDevice, maxFrames);
-
-			/* ***************** DESCRIPTOR SET ******************* */
-			m.InitDescriptorSetLayoutBindingAndCreateInfo(device);
-			m.InitDescriptorPoolCreateInfo(device, maxFrames);
-			m.InitDescriptorSetAllocInfo(device, maxFrames);
-			m.WriteDescriptorSet(device, maxFrames);
-		}
+		//for (auto &m : models)
+		//{
+		//	// for each model, initialize their buffers and descriptor sets
+		//	m.CreateVertexBuffer(device, physicalDevice);
+		//	m.CreateIndexBuffer(device, physicalDevice);
+		//	m.CreateStorageBuffer(device, physicalDevice, maxFrames);
+		//
+		//	/* ***************** DESCRIPTOR SET ******************* */
+		//	m.InitDescriptorSetLayoutBindingAndCreateInfo(device);
+		//	m.InitDescriptorPoolCreateInfo(device, maxFrames);
+		//	m.InitDescriptorSetAllocInfo(device, maxFrames);
+		//	m.WriteDescriptorSet(device, maxFrames);
+		//}
 
 		/***************** SHADER INTIALIZATION ******************/
 		//for (auto &m : models)
