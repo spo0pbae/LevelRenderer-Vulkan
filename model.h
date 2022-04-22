@@ -46,8 +46,6 @@ private:
 
 	// MODEL SPECIFIC MEMBERS
 	H2B::Parser					m_mesh;
-	//VkShaderModule				m_vertexShader		= nullptr;
-	//VkShaderModule				m_pixelShader		= nullptr;
 
 	// Create Vertex/Index buffer handles
 	VkBuffer					m_vertexBuffer		= nullptr;
@@ -66,61 +64,7 @@ private:
 	VkDescriptorSetLayout		m_descriptorLayout	= nullptr;
 	VkDescriptorPool			m_descriptorPool	= nullptr;
 
-	// Create matrices (and proxies)
-	GW::MATH::GMatrix			m_matMathProxy;
-	GW::MATH::GVector			m_lightProxy;
-	GW::MATH::GMATRIXF			m_world;
-	GW::MATH::GMATRIXF			m_view;
-	GW::MATH::GMATRIXF			m_projection;
-
-	float m_fov = 0.0f;
-	float m_ar = 0.0f;
-
 public:
-
-	// Adding model arg to initialize the scene data for each model
-	void InitSceneData(GW::GRAPHICS::GVulkanSurface& _vlk, Model &_model)
-	{
-		// create proxies
-		_model.m_lightProxy.Create();
-		_model.m_matMathProxy.Create();
-
-		// WORLD MATRIX
-		_model.m_world = GW::MATH::GIdentityMatrixF;
-
-		// VIEW MATRIX
-		GW::MATH::GVECTORF eye { 0.75f, 0.25f,-3.0f };	// eye position
-		GW::MATH::GVECTORF at  { 0.15f, 0.75f, 0.0f };	// where it's looking
-		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };	// how high up 
-		_model.m_matMathProxy.LookAtLHF(eye, at, up, _model.m_view);  // this performs the inverse operation
-
-		// PROJECTION MATRIX
-		_vlk.GetAspectRatio(_model.m_ar);
-		_model.m_fov = DegreesToRadians(65);
-		_model.m_matMathProxy.ProjectionVulkanLHF(_model.m_fov, _model.m_ar, 0.1f, 100.0f, _model.m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
-
-		/* Lighting info */
-		GW::MATH::GVECTORF lightDir		{ -1.0f, -1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
-		GW::MATH::GVECTORF lightClr		{ 0.9f,  0.9f,  1.0f,  1.0f };					// mostly white with bluish tinge
-		GW::MATH::GVECTORF lightAmbient	{ 0.25f, 0.25f, 0.35f, 1.0f };
-
-		_model.m_sceneData.sunDirection	= lightDir;
-		_model.m_sceneData.sunColor		= lightClr;
-		_model.m_sceneData.sunAmbient	= lightAmbient;
-		_model.m_sceneData.viewMatrix	= _model.m_view;
-		_model.m_sceneData.projMatrix	= _model.m_projection;
-
-		// for each model, set the model's world matrices
-		for (int i = 0; i < m_levelData.modelData.size(); ++i)
-		{
-			_model.m_sceneData.matricies[i] = _model.m_levelData.modelMatrices[i];
-		}
-		// for each material in the model, set to the materials attributes, which is first element in material struct
-		for (int i = 0; i < _model.m_mesh.materialCount; ++i)
-		{
-			_model.m_sceneData.materials[i] = _model.m_mesh.materials[i].attrib;
-		}
-	}
 
 	// Create per-mesh buffers
 	void CreateVertexBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice)
@@ -128,7 +72,7 @@ public:
 		GvkHelper::create_buffer(
 			_physicalDevice,
 			_device,
-			sizeof(H2B::VERTEX) * m_mesh.vertexCount,
+			sizeof(H2B::VERTEX) * (m_mesh.vertexCount),
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_vertexBuffer, &m_vertexData);
@@ -141,11 +85,11 @@ public:
 		GvkHelper::create_buffer(
 			_physicalDevice,
 			_device,
-			sizeof(unsigned int) * m_mesh.indexCount,
+			sizeof(unsigned int) * (m_mesh.indexCount),
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_indexBuffer, &m_indexData);
-		GvkHelper::write_to_buffer(_device, m_indexData, m_mesh.indices.data(), sizeof(unsigned int) * m_mesh.indexCount);
+		GvkHelper::write_to_buffer(_device, m_indexData, m_mesh.indices.data(), sizeof(unsigned int) * (m_mesh.indexCount));
 	}
 
 	void CreateStorageBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice, unsigned int _maxFrames)
@@ -165,7 +109,7 @@ public:
 		}
 	}
 
-	/*/ Initialize shaders */
+	/* Initialize shaders */
 //	void InitShaders(VkDevice &_device)
 //	{
 //		std::string vertexShaderSource		= ShaderToString("../VertexShader.hlsl");
@@ -215,9 +159,9 @@ public:
 	void InitDescriptorSetLayoutBindingAndCreateInfo(VkDevice &_device)
 	{
 		VkDescriptorSetLayoutBinding descriptorLayoutBinding = {};
-		descriptorLayoutBinding.descriptorCount				= 1;															// only one descriptor for now
-		descriptorLayoutBinding.descriptorType				= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;							// used for storage buffers
-		descriptorLayoutBinding.stageFlags					= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;	// For both shaders
+		descriptorLayoutBinding.descriptorCount				= 1;
+		descriptorLayoutBinding.descriptorType				= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptorLayoutBinding.stageFlags					= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		descriptorLayoutBinding.binding						= 0;
 		descriptorLayoutBinding.pImmutableSamplers			= nullptr;
 
@@ -308,23 +252,6 @@ public:
 			vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);
 		}
 	}
-
-	/*/ Read shader from file */
-	//std::string ShaderToString(const char* _shaderFilePath)
-	//{
-	//	std::string output;
-	//	unsigned int stringLength = 0;
-	//	GW::SYSTEM::GFile file; file.Create();
-	//	file.GetFileSize(_shaderFilePath, stringLength);
-	//	if (stringLength && +file.OpenBinaryRead(_shaderFilePath))
-	//	{
-	//		output.resize(stringLength);
-	//		file.Read(&output[0], stringLength);
-	//	}
-	//	else
-	//		std::cout << "ERROR: Shader Source File \"" << _shaderFilePath << "\" Not Found!" << std::endl;
-	//	return output;
-	//}
 
 	// Clean up
 	void CleanUpModelData(VkDevice& _device)

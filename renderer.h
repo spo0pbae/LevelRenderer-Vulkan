@@ -11,17 +11,29 @@ class Renderer
 	GW::INPUT::GInput				m_inputProxy;
 	GW::INPUT::GController			m_controllerProxy;
 	GW::MATH::GMatrix				m_mxMathProxy;
+	GW::MATH::GVector				m_vecMathProxy;
 
-	VkDevice						device			= nullptr;
-	VkPipeline						pipeline		= nullptr;
-	VkPipelineLayout				pipelineLayout	= nullptr;
-	Model							modelPx; 
-	std::vector<Model>				models;
-	XTime t;
+	VkDevice						m_device			= nullptr;
+	VkPipeline						m_pipeline			= nullptr;
+	VkPipelineLayout				m_pipelineLayout	= nullptr;
 
-	// taking this out added complication!
-	VkShaderModule m_vertexShader					= nullptr;
-	VkShaderModule m_pixelShader					= nullptr;
+	// Shader modules
+	VkShaderModule					m_vertexShader		= nullptr;
+	VkShaderModule					m_pixelShader		= nullptr;
+
+	// Models
+	std::vector<Model>				m_models;
+
+	// Create matrices
+	GW::MATH::GMATRIXF				m_world;
+	GW::MATH::GMATRIXF				m_view;
+	GW::MATH::GMATRIXF				m_projection;
+
+	XTime m_timer;
+
+	float m_fov = 0.0f;
+	float m_ar	= 0.0f;
+
 public:
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	{
@@ -37,16 +49,71 @@ public:
 		m_controllerProxy.Create();
 
 		// Separate out the models so we can give them their own buffers
-		modelPx.LoadModels(models);
+		Model temp;
+		temp.LoadModels(m_models);
 
-		/* INITIALIZE SCENE DATA */
-		for (auto &m : models)
-			m.InitSceneData(vlk, m);
+		/* INITIALIZE SCENE DATA (for each model)*/
+
+		// create proxies
+		m_vecMathProxy.Create();
+		m_mxMathProxy.Create();
+
+		// WORLD MATRIX
+		m_world = GW::MATH::GIdentityMatrixF;
+
+		// VIEW MATRIX
+		GW::MATH::GVECTORF eye{ 0.75f, 0.25f,-3.0f };	// eye position
+		GW::MATH::GVECTORF at { 0.15f, 0.75f, 0.0f };	// where it's looking
+		GW::MATH::GVECTORF up { 0.0f,  1.0f,  0.0f };	// how high up 
+		m_mxMathProxy.LookAtLHF(eye, at, up, m_view);	// this performs the inverse operation
+
+		// PROJECTION MATRIX
+		_vlk.GetAspectRatio(m_ar);
+		m_fov = DegreesToRadians(65);
+		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
+
+		/* Lighting info */
+		GW::MATH::GVECTORF lightDir		{ -1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
+		GW::MATH::GVECTORF lightClr		{ 0.9f,  0.9f,  1.0f,  1.0f };					// mostly white with bluish tinge
+		GW::MATH::GVECTORF lightAmbient	{ 0.25f, 0.25f, 0.35f, 1.0f };
+
+		// NORMALIZE LIGHT DIRECTION
+		m_vecMathProxy.NormalizeF(lightDir, lightDir);
+
+		// take the view's position from world space (put it back in world space)
+		GW::MATH::GMATRIXF inverseView;
+		m_mxMathProxy.InverseF(m_view, inverseView);
+		GW::MATH::GVECTORF camPos = inverseView.row4;
+
+		for (int i = 0; i < temp.m_levelData.modelData.size(); i++)
+		{
+			// copy the level data
+			m_models[i].m_levelData.modelData		= temp.m_levelData.modelData;
+			m_models[i].m_levelData.modelNames		= temp.m_levelData.modelNames;
+			m_models[i].m_levelData.modelMatrices	= temp.m_levelData.modelMatrices;
+
+			// set each model's world matrix and scene data
+			m_models[i].m_sceneData.matricies[0]	= temp.m_levelData.modelMatrices[i];
+
+			m_models[i].m_sceneData.sunDirection	= lightDir;
+			m_models[i].m_sceneData.sunColor		= lightClr;
+			m_models[i].m_sceneData.sunAmbient		= lightAmbient;
+			m_models[i].m_sceneData.camPos			= camPos;
+			m_models[i].m_sceneData.viewMatrix		= m_view;
+			m_models[i].m_sceneData.projMatrix		= m_projection;
+		}
+
+		// for each material in the model, set to the materials attributes, which is first element in material struct
+		for (auto &m : m_models)
+		{
+			for (int i = 0; i < m.m_mesh.materialCount; ++i)
+				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
+		}
 
 		/***************** GEOMETRY INTIALIZATION ******************/
 		/* Grab the device & physical device so we can allocate some stuff */
 		VkPhysicalDevice physicalDevice = nullptr;
-		vlk.GetDevice((void**)&device);
+		vlk.GetDevice((void**)&m_device);
 		vlk.GetPhysicalDevice((void**)&physicalDevice);
 
 		/* Determine max frames and loop to initialize all buffers
@@ -55,24 +122,20 @@ public:
 		vlk.GetSwapchainImageCount(maxFrames);
 
 		/* INITIALIZE VERTEX BUFFERS, INDEX BUFFERS, AND STORAGE BUFFERS*/
-		//for (auto &m : models)
-		//{
-		//	// for each model, initialize their buffers and descriptor sets
-		//	m.CreateVertexBuffer(device, physicalDevice);
-		//	m.CreateIndexBuffer(device, physicalDevice);
-		//	m.CreateStorageBuffer(device, physicalDevice, maxFrames);
-		//
-		//	/* ***************** DESCRIPTOR SET ******************* */
-		//	m.InitDescriptorSetLayoutBindingAndCreateInfo(device);
-		//	m.InitDescriptorPoolCreateInfo(device, maxFrames);
-		//	m.InitDescriptorSetAllocInfo(device, maxFrames);
-		//	m.WriteDescriptorSet(device, maxFrames);
-		//}
+		for (auto &m : m_models)
+		{
+			m.CreateVertexBuffer(m_device, physicalDevice);
+			m.CreateIndexBuffer(m_device, physicalDevice);
+			m.CreateStorageBuffer(m_device, physicalDevice, maxFrames);
+		
+			/* ***************** DESCRIPTOR SET ******************* */
+			m.InitDescriptorSetLayoutBindingAndCreateInfo(m_device);
+			m.InitDescriptorPoolCreateInfo(m_device, maxFrames);
+			m.InitDescriptorSetAllocInfo(m_device, maxFrames);
+			m.WriteDescriptorSet(m_device, maxFrames);
+		}
 
 		/***************** SHADER INTIALIZATION ******************/
-		//for (auto &m : models)
-		//	m.InitShaders(device);
-
 		std::string vertexShaderSource = ShaderToString("../VertexShader.hlsl");
 		std::string pixelShaderSource  = ShaderToString("../PixelShader.hlsl");
 
@@ -93,7 +156,7 @@ public:
 		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
 			std::cout << "Vertex Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
 
-		GvkHelper::create_shader_module(device, shaderc_result_get_length(result), // load into Vulkan
+		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
 			(char*)shaderc_result_get_bytes(result), &m_vertexShader);
 
 		shaderc_result_release(result); // done
@@ -106,7 +169,7 @@ public:
 		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
 			std::cout << "Pixel Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
 
-		GvkHelper::create_shader_module(device, shaderc_result_get_length(result), // load into Vulkan
+		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
 			(char*)shaderc_result_get_bytes(result), &m_pixelShader);
 
 		shaderc_result_release(result); // done
@@ -255,11 +318,11 @@ public:
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
 		pipeline_layout_create_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_create_info.setLayoutCount			= 1;
-		pipeline_layout_create_info.pSetLayouts				= &models[0].m_descriptorLayout;//VK_NULL_HANDLE;
+		pipeline_layout_create_info.pSetLayouts				= &m_models[0].m_descriptorLayout;//VK_NULL_HANDLE;
 		pipeline_layout_create_info.pushConstantRangeCount	= 1;					// number of pushconstant ranges
 		pipeline_layout_create_info.pPushConstantRanges		= &pushConstant;
-		vkCreatePipelineLayout(device, &pipeline_layout_create_info,
-			nullptr, &pipelineLayout);
+		vkCreatePipelineLayout(m_device, &pipeline_layout_create_info,
+			nullptr, &m_pipelineLayout);
 
 		// Pipeline State... (FINALLY) 
 		VkGraphicsPipelineCreateInfo pipeline_create_info = {};
@@ -274,12 +337,12 @@ public:
 		pipeline_create_info.pDepthStencilState				= &depth_stencil_create_info;
 		pipeline_create_info.pColorBlendState				= &color_blend_create_info;
 		pipeline_create_info.pDynamicState					= &dynamic_create_info;
-		pipeline_create_info.layout							= pipelineLayout;
+		pipeline_create_info.layout							= m_pipelineLayout;
 		pipeline_create_info.renderPass						= renderPass;
 		pipeline_create_info.subpass						= 0;
 		pipeline_create_info.basePipelineHandle				= VK_NULL_HANDLE;
-		vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1,
-			&pipeline_create_info, nullptr, &pipeline);
+		vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1,
+			&pipeline_create_info, nullptr, &m_pipeline);
 
 		/***************** CLEANUP / SHUTDOWN ******************/
 		// GVulkanSurface will inform us when to release any allocated resources
@@ -294,7 +357,8 @@ public:
 
 	void Render()
 	{
-		modelPx.m_sceneData.viewMatrix = modelPx.m_view;
+		for (auto &m : m_models)
+		m.m_sceneData.viewMatrix = m_view;
 
 		/* Grab the current Vulkan commandBuffer */
 		unsigned int currentBuffer;
@@ -316,12 +380,21 @@ public:
 		VkRect2D scissor = { {0, 0}, {width, height} };
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
 		/* BIND BUFFERS */
-		
-		// Loop through the meshes and draw, splitting the drawing into different submissions */
+		// TEMPORARY BINDING (since the renderer wont go into my bind function) ///
+		VkDeviceSize offsets[] = { 0 };
 
+		// Bind vertex/index buffers & descriptor
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_models[0].m_vertexBuffer, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, m_models[0].m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			m_pipelineLayout, 0, 1, &m_models[0].m_descriptorSet[currentBuffer], 0, nullptr);
+		GvkHelper::write_to_buffer(m_device, m_models[0].m_storageData[currentBuffer], &m_models[0].m_sceneData, sizeof(Model::SHADER_MODEL_DATA));
+		 ///////////////////////////////////////////////////////////////////////////
+
+		/* DRAW */
 		// we want each model to draw it's mesh
 		//for (auto &m : models)
 		//{
@@ -330,18 +403,18 @@ public:
 		//}
 
 		// Testing drawing a single model from the model vector
-		models[0].BindBuffers(device, pipelineLayout, commandBuffer, currentBuffer);
-		models[0].Draw(pipelineLayout, commandBuffer);
+			//models[0].BindBuffers(device, pipelineLayout, commandBuffer, currentBuffer);
+		m_models[0].Draw(m_pipelineLayout, commandBuffer);
 	}
 
 	void UpdateCamera()
 	{
-		t.Signal();
-		float delta = t.Delta();
+		m_timer.Signal();
+		float delta = m_timer.Delta();
 
 		// Set view matrix back to world space
 		GW::MATH::GMATRIXF viewCopy;
-		m_mxMathProxy.InverseF(modelPx.m_view, viewCopy);
+		m_mxMathProxy.InverseF(m_view, viewCopy);
 
 		float ychange			= 0.0f;		// represents how much we want the y value to change this frame
 		const float camSpeed	= 2.5f;		// Represents how far we want the camera to be able to move over one second
@@ -408,14 +481,14 @@ public:
 		//GW::MATH::GVECTORF pitchVec;		//may need to be a matrix to be multiplied instead
 		//GW::MATH::GMATRIXF pitchMx;
 
-		float pi = 3.14159f;
-		float thumbSpeed = pi * delta;
-		float totalPitch = 0.0f; 		// pitch is essentially vertical tilt (X rotation)
-		float totalYaw = 0.0f;
+		float pi			= 3.14159f;
+		float thumbSpeed	= pi * delta;
+		float totalPitch	= 0.0f; 		// pitch is essentially vertical tilt (X rotation)
+		float totalYaw		= 0.0f;
 
 		// Right stick states
-		float rStickX = 0.0f;
-		float rStickY = 0.0f;
+		float rStickX		= 0.0f;
+		float rStickY		= 0.0f;
 
 		// right controller stick
 		m_controllerProxy.GetState(0, G_RX_AXIS, rStickX);
@@ -429,18 +502,18 @@ public:
 		GW::GReturn res = m_inputProxy.GetMouseDelta(mX, mY);
 		if (res == GW::GReturn::SUCCESS && res != GW::GReturn::REDUNDANT || rStickY)
 		{
-			totalPitch = modelPx.m_fov * mY / screenHeight + rStickY * -thumbSpeed; // -thumbspeed prevents inverted tilt
+			totalPitch = m_fov * mY / screenHeight + rStickY * -thumbSpeed; // -thumbspeed prevents inverted tilt
 			m_mxMathProxy.RotateXLocalF(viewCopy, totalPitch, viewCopy);
 		}
 		//  yaw rotation
 		if (res == GW::GReturn::SUCCESS && res != GW::GReturn::REDUNDANT || rStickX)
 		{
-			totalYaw = modelPx.m_fov * modelPx.m_ar * mX / screenWidth + rStickX * thumbSpeed;
+			totalYaw = m_fov * m_ar * mX / screenWidth + rStickX * thumbSpeed;
 			m_mxMathProxy.RotateYGlobalF(viewCopy, totalYaw, viewCopy);
 		}
 
 		// Set back to view space
-		m_mxMathProxy.InverseF(viewCopy, modelPx.m_view);
+		m_mxMathProxy.InverseF(viewCopy, m_view);
 	}
 
 	std::string ShaderToString(const char* _shaderFilePath)
@@ -463,18 +536,18 @@ private:
 	void CleanUp()
 	{
 		// wait till everything has completed
-		vkDeviceWaitIdle(device);
+		vkDeviceWaitIdle(m_device);
 
 		// Clean up shaders
-		vkDestroyShaderModule(device, m_vertexShader, nullptr);
-		vkDestroyShaderModule(device, m_pixelShader, nullptr);
+		vkDestroyShaderModule(m_device, m_vertexShader, nullptr);
+		vkDestroyShaderModule(m_device, m_pixelShader, nullptr);
 
 		// Clean up vertex/index buffers, etc.
-		for (auto & m : models)
-			m.CleanUpModelData(device);
+		for (auto & m : m_models)
+			m.CleanUpModelData(m_device);
 
 		// Clean up pipeline
-		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-		vkDestroyPipeline(device, pipeline, nullptr);
+		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_device, m_pipeline, nullptr);
 	}
 };
