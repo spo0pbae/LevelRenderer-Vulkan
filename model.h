@@ -23,8 +23,6 @@ private:
 	// Collect the mesh names and their matrices
 	struct GameLevelData
 	{
-		//std::vector<unsigned int> uniqueMeshOffsets;	// offsets in the meshData vector...
-		//std::vector<H2B::Parser> uniqueMeshes;		// all unique meshes
 		std::vector<H2B::Parser> modelData;				// every mesh in the level
 		std::vector<std::string> modelNames;
 		std::vector<GW::MATH::GMATRIXF> modelMatrices;
@@ -66,7 +64,7 @@ private:
 
 public:
 
-	// Create per-mesh buffers
+	// CREATE PER-MODEL BUFFERS
 	void CreateVertexBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice)
 	{
 		GvkHelper::create_buffer(
@@ -109,53 +107,7 @@ public:
 		}
 	}
 
-	/* Initialize shaders */
-//	void InitShaders(VkDevice &_device)
-//	{
-//		std::string vertexShaderSource		= ShaderToString("../VertexShader.hlsl");
-//		std::string pixelShaderSource		= ShaderToString("../PixelShader.hlsl");
-//
-//		/* Intialize runtime shader compiler HLSL->SPIRV */
-//		shaderc_compiler_t compiler			= shaderc_compiler_initialize();
-//		shaderc_compile_options_t options	= shaderc_compile_options_initialize();
-//		shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
-//		shaderc_compile_options_set_invert_y(options, false); // enable/disable Y inversion
-//
-//#ifndef NDEBUG
-//		shaderc_compile_options_set_generate_debug_info(options);
-//#endif
-//		// Create Vertex Shader
-//		shaderc_compilation_result_t result = shaderc_compile_into_spv( // compile
-//			compiler, vertexShaderSource.c_str(), strlen(vertexShaderSource.c_str()),
-//			shaderc_vertex_shader, "main.vert", "main", options);
-//
-//		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-//			std::cout << "Vertex Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
-//
-//		GvkHelper::create_shader_module(_device, shaderc_result_get_length(result), // load into Vulkan
-//			(char*)shaderc_result_get_bytes(result), &m_vertexShader);
-//
-//		shaderc_result_release(result); // done
-//
-//		// Create Pixel Shader
-//		result = shaderc_compile_into_spv( // compile
-//			compiler, pixelShaderSource.c_str(), strlen(pixelShaderSource.c_str()),
-//			shaderc_fragment_shader, "main.frag", "main", options);
-//
-//		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-//			std::cout << "Pixel Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
-//
-//		GvkHelper::create_shader_module(_device, shaderc_result_get_length(result), // load into Vulkan
-//			(char*)shaderc_result_get_bytes(result), &m_pixelShader);
-//
-//		shaderc_result_release(result); // done
-//
-//		// Free runtime shader compiler resources
-//		shaderc_compile_options_release(options);
-//		shaderc_compiler_release(compiler);
-//	}
-
-	// Set up descriptor for the shaders. These supply the shaders with external data, in this case the storage buffer
+	// SET UP PER-MODEL DESCRIPTOR SETS FOR THEIR STORAGE BUFFERS
 	void InitDescriptorSetLayoutBindingAndCreateInfo(VkDevice &_device)
 	{
 		VkDescriptorSetLayoutBinding descriptorLayoutBinding = {};
@@ -175,6 +127,7 @@ public:
 		vkCreateDescriptorSetLayout(_device, &descriptorCreateInfo,
 			nullptr, &m_descriptorLayout);
 	}
+
 	void InitDescriptorPoolCreateInfo(VkDevice &_device, unsigned int _maxFrames)
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
@@ -187,6 +140,7 @@ public:
 		descriptorPoolCreateInfo.pNext						= nullptr;
 		vkCreateDescriptorPool(_device, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool); // successful
 	}
+
 	void InitDescriptorSetAllocInfo(VkDevice &_device, unsigned int _maxFrames)
 	{
 		VkDescriptorSetAllocateInfo descriptorAllocInfo = {};
@@ -202,10 +156,9 @@ public:
 		}
 	}
 
-	// Link descriptor set to storage buffer
 	void WriteDescriptorSet(VkDevice &_device, unsigned int _maxFrames)
 	{
-				/* Link descriptor set to storage buffer */
+		/* Link descriptor set to storage buffer */
 		VkWriteDescriptorSet writeDescriptorSet = {};
 		writeDescriptorSet.sType							= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptorSet.descriptorCount					= 1;
@@ -222,7 +175,7 @@ public:
 		}
 	}
 
-	// Bind vertex/index/storage buffers
+	// BIND VERTEX/INDEX/STORAGE BUFFERS
 	void BindBuffers(VkDevice _device, VkPipelineLayout _pipelineLayout, VkCommandBuffer _commandBuffer, unsigned int _currentBuffer)
 	{
 		VkDeviceSize offsets[] = { 0 };
@@ -238,11 +191,9 @@ public:
 		GvkHelper::write_to_buffer(_device, m_storageData[_currentBuffer], &m_sceneData, sizeof(Model::SHADER_MODEL_DATA));
 	}
 
-	// currently drawing a single mesh
 	void Draw(VkPipelineLayout& _pipelineLayout, VkCommandBuffer& _commandBuffer)
 	{
-		// each model's mesh
-		for (int i = 0; i < 2; i++)//m_mesh.meshes.size(); i++)
+		for (int i = 0; i < 1; i++)//m_mesh.meshes.size(); i++)
 		{
 			// send each mesh's material index to the shaders right before calling draw
 			vkCmdPushConstants(_commandBuffer, _pipelineLayout,
@@ -261,10 +212,6 @@ public:
 		vkDestroyBuffer(_device, m_vertexBuffer, nullptr);
 		vkFreeMemory(_device, m_vertexData, nullptr);
 
-		/*/ Clean up shaders */
-		//vkDestroyShaderModule(_device, m_vertexShader, nullptr);
-		//vkDestroyShaderModule(_device, m_pixelShader, nullptr);
-
 		// Free the storage buffers
 		for (int i = 0; i < m_storageData.size(); ++i)
 		{
@@ -281,12 +228,13 @@ public:
 		vkDestroyDescriptorPool(_device, m_descriptorPool, nullptr);
 	}
 
-	// Runs the parser and populates a vector of models, giving them their own shaders/buffers/etc.
-	// this is so we can group all of them together and then bind/draw them individually in Render()
+	// Runs the parser and populates a vector of Models
+	// This is done so we can group all of them together and then bind/draw them individually in the renderer
 	// IN: reference to a vector of models to be filled
 	void LoadModels(std::vector<Model> &_models)
 	{
-		ParseH2B(m_levelData, std::string("../FoxTest.txt"));		// Test level
+			//ParseH2B(m_levelData, std::string("../FoxTest.txt"));		// Test level
+		ParseH2B(m_levelData, std::string("../GameLevel.txt"));		// Real level
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
 			Model temp;
@@ -306,7 +254,7 @@ public:
 			int ndx = 0;
 			std::vector<std::string> tempNames;
 
-			std::ifstream file{ _filePath, std::ios::in };		// open file
+			std::ifstream file{ _filePath, std::ios::in };		// Open file
 
 			if (!file.is_open())
 				std::cout << "Could not open file!\n";
@@ -352,7 +300,7 @@ public:
 							}
 							getfloat = strtok(NULL, " (,)>");	// Get next token
 
-							// once the last element is filled, push into vector and reset
+							// Once the last element is filled, push into vector and reset
 							if (ndx == 16)
 							{
 								_data.modelMatrices.push_back(tempMatrix);
@@ -382,13 +330,6 @@ public:
 
 				p.Parse(path);
 				_data.modelData.push_back(p);
-
-				// Also fill a vector with unique meshes... just in case?
-				//if (_data.meshNames[i] != prevName)
-				//{
-				//	_data.uniqueMeshes.push_back(p);
-				//	_data.uniqueMeshOffsets.push_back(i);
-				//}
 				prevName = _data.modelNames[i];
 			}
 			// All done!

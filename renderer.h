@@ -45,6 +45,8 @@ public:
 		win.GetClientHeight(height);
 
 		// Enable proxies
+		m_vecMathProxy.Create();
+		m_mxMathProxy.Create();
 		m_inputProxy.Create(win);
 		m_controllerProxy.Create();
 
@@ -52,14 +54,9 @@ public:
 		Model temp;
 		temp.LoadModels(m_models);
 
-		/* INITIALIZE SCENE DATA (for each model)*/
-
-		// create proxies
-		m_vecMathProxy.Create();
-		m_mxMathProxy.Create();
-
+		/* INITIALIZE SCENE DATA */
 		// WORLD MATRIX
-		m_world = GW::MATH::GIdentityMatrixF;
+		//m_world = GW::MATH::GIdentityMatrixF;
 
 		// VIEW MATRIX
 		GW::MATH::GVECTORF eye{ 0.75f, 0.25f,-3.0f };	// eye position
@@ -103,9 +100,10 @@ public:
 			m_models[i].m_sceneData.projMatrix		= m_projection;
 		}
 
-		// for each material in the model, set to the materials attributes, which is first element in material struct
+		// for each model
 		for (auto &m : m_models)
 		{
+			// for each material, set the scene data's materials
 			for (int i = 0; i < m.m_mesh.materialCount; ++i)
 				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
 		}
@@ -136,55 +134,14 @@ public:
 		}
 
 		/***************** SHADER INTIALIZATION ******************/
-		std::string vertexShaderSource = ShaderToString("../VertexShader.hlsl");
-		std::string pixelShaderSource  = ShaderToString("../PixelShader.hlsl");
-
-		/* Intialize runtime shader compiler HLSL->SPIRV */
-		shaderc_compiler_t compiler		  = shaderc_compiler_initialize();
-		shaderc_compile_options_t options = shaderc_compile_options_initialize();
-		shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
-		shaderc_compile_options_set_invert_y(options, false); // enable/disable Y inversion
-
-#ifndef NDEBUG
-		shaderc_compile_options_set_generate_debug_info(options);
-#endif
-		// Create Vertex Shader
-		shaderc_compilation_result_t result = shaderc_compile_into_spv( // compile
-			compiler, vertexShaderSource.c_str(), strlen(vertexShaderSource.c_str()),
-			shaderc_vertex_shader, "main.vert", "main", options);
-
-		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-			std::cout << "Vertex Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
-
-		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
-			(char*)shaderc_result_get_bytes(result), &m_vertexShader);
-
-		shaderc_result_release(result); // done
-
-		// Create Pixel Shader
-		result = shaderc_compile_into_spv( // compile
-			compiler, pixelShaderSource.c_str(), strlen(pixelShaderSource.c_str()),
-			shaderc_fragment_shader, "main.frag", "main", options);
-
-		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-			std::cout << "Pixel Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
-
-		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
-			(char*)shaderc_result_get_bytes(result), &m_pixelShader);
-
-		shaderc_result_release(result); // done
-
-		// Free runtime shader compiler resources
-		shaderc_compile_options_release(options);
-		shaderc_compiler_release(compiler);
+		InitShaders();
 
 		/***************** PIPELINE INTIALIZATION ****************/
-		// Create Pipeline & Layout (Thanks Tiny!)
 		VkRenderPass renderPass;
 		vlk.GetRenderPass((void**)&renderPass);
 		VkPipelineShaderStageCreateInfo stage_create_info[2] = {};
 
-		/* Create Stage Info for vertex/fragment shaders */
+		// Stage Info for vertex/fragment shaders
 		stage_create_info[0].sType							= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stage_create_info[0].stage							= VK_SHADER_STAGE_VERTEX_BIT;
 		stage_create_info[0].module							= m_vertexShader;//models[0].m_vertexShader;
@@ -212,7 +169,7 @@ public:
 		{
 			// Location, binding, format, offset
 			{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0  }, // pos
-			{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12 }, // UVW (texture)	-- 12 byte offset (3 floats, 4 bytes each)
+			{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12 }, // UVW (texture)
 			{ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, 24 }  // Normal
 		};
 
@@ -355,6 +312,51 @@ public:
 			});
 	}
 
+	void InitShaders()
+	{
+		std::string vertexShaderSource = ShaderToString("../VertexShader.hlsl");
+		std::string pixelShaderSource = ShaderToString("../PixelShader.hlsl");
+
+		/* Intialize runtime shader compiler HLSL->SPIRV */
+		shaderc_compiler_t compiler = shaderc_compiler_initialize();
+		shaderc_compile_options_t options = shaderc_compile_options_initialize();
+		shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
+		shaderc_compile_options_set_invert_y(options, false); // enable/disable Y inversion
+
+#ifndef NDEBUG
+		shaderc_compile_options_set_generate_debug_info(options);
+#endif
+		// Create Vertex Shader
+		shaderc_compilation_result_t result = shaderc_compile_into_spv( // compile
+			compiler, vertexShaderSource.c_str(), strlen(vertexShaderSource.c_str()),
+			shaderc_vertex_shader, "main.vert", "main", options);
+
+		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
+			std::cout << "Vertex Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
+
+		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
+			(char*)shaderc_result_get_bytes(result), &m_vertexShader);
+
+		shaderc_result_release(result); // done
+
+		// Create Pixel Shader
+		result = shaderc_compile_into_spv( // compile
+			compiler, pixelShaderSource.c_str(), strlen(pixelShaderSource.c_str()),
+			shaderc_fragment_shader, "main.frag", "main", options);
+
+		if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
+			std::cout << "Pixel Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
+
+		GvkHelper::create_shader_module(m_device, shaderc_result_get_length(result), // load into Vulkan
+			(char*)shaderc_result_get_bytes(result), &m_pixelShader);
+
+		shaderc_result_release(result); // done
+
+		// Free runtime shader compiler resources
+		shaderc_compile_options_release(options);
+		shaderc_compiler_release(compiler);
+	}
+
 	void Render()
 	{
 		for (auto &m : m_models)
@@ -382,29 +384,12 @@ public:
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		/* BIND BUFFERS */
-		// TEMPORARY BINDING (since the renderer wont go into my bind function) ///
-		VkDeviceSize offsets[] = { 0 };
-
-		// Bind vertex/index buffers & descriptor
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_models[0].m_vertexBuffer, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_models[0].m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			m_pipelineLayout, 0, 1, &m_models[0].m_descriptorSet[currentBuffer], 0, nullptr);
-		GvkHelper::write_to_buffer(m_device, m_models[0].m_storageData[currentBuffer], &m_models[0].m_sceneData, sizeof(Model::SHADER_MODEL_DATA));
-		 ///////////////////////////////////////////////////////////////////////////
-
-		/* DRAW */
-		// we want each model to draw it's mesh
-		//for (auto &m : models)
-		//{
-		//	m.BindBuffers(device, pipelineLayout, commandBuffer, currentBuffer, offsets);
-		//	m.Draw(pipelineLayout, commandBuffer);
-		//}
-
-		// Testing drawing a single model from the model vector
-			//models[0].BindBuffers(device, pipelineLayout, commandBuffer, currentBuffer);
-		m_models[0].Draw(m_pipelineLayout, commandBuffer);
+		/* BIND AND DRAW EACH MODEL */
+		for (auto &m : m_models)
+		{
+			m.BindBuffers(m_device, m_pipelineLayout, commandBuffer, currentBuffer);
+			m.Draw(m_pipelineLayout, commandBuffer);
+		}
 	}
 
 	void UpdateCamera()
@@ -477,9 +462,6 @@ public:
 		unsigned int screenWidth, screenHeight;
 		win.GetClientWidth(screenWidth);
 		win.GetClientHeight(screenHeight);
-
-		//GW::MATH::GVECTORF pitchVec;		//may need to be a matrix to be multiplied instead
-		//GW::MATH::GMATRIXF pitchMx;
 
 		float pi			= 3.14159f;
 		float thumbSpeed	= pi * delta;

@@ -5,7 +5,6 @@
 #define GATEWARE_ENABLE_MATH				// Enables Gateware math libraries
 #define GATEWARE_ENABLE_INPUT				// Enables Gateware input libraries
 
-// TODO: Part 3a
 // Ignore some GRAPHICS libraries we aren't going to use
 #define GATEWARE_DISABLE_GDIRECTX11SURFACE	// we have another template for this
 #define GATEWARE_DISABLE_GDIRECTX12SURFACE	// we have another template for this
@@ -34,7 +33,7 @@ int main()
 		// TODO: Part 1a
 		win.SetWindowName("Sierra Negron -- Level Renderer -- Vulkan");
 		VkClearValue clrAndDepth[2];
-		clrAndDepth[0].color = { {0.45f, 0.45f, 0.50f, 1.0f} };
+		clrAndDepth[0].color = { {0.35f, 0.10f, 0.50f, 1.0f} };
 		clrAndDepth[1].depthStencil = { 1.0f, 0u };
 
 		// Handle resize event
