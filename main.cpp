@@ -15,13 +15,13 @@
 #include "../Gateware/Gateware.h"
 #include "renderer.h"
 
-// open some namespaces to compact the code a bit
+// Open some namespaces to compact the code a bit
 using namespace GW;
 using namespace CORE;
 using namespace SYSTEM;
 using namespace GRAPHICS;
 
-// lets pop a window and use Vulkan to clear to a red screen
+// Let's pop a window and use Vulkan to clear to a red screen
 int main()
 {
 	GWindow win;
@@ -30,10 +30,9 @@ int main()
 
 	if (+win.Create(0, 0, 800, 600, GWindowStyle::WINDOWEDBORDERED))
 	{
-		// TODO: Part 1a
 		win.SetWindowName("Sierra Negron -- Level Renderer -- Vulkan");
 		VkClearValue clrAndDepth[2];
-		clrAndDepth[0].color = { {0.35f, 0.10f, 0.50f, 1.0f} };
+		clrAndDepth[0].color = { {0.55f, 0.55f, 0.65f, 1.0f} };
 		clrAndDepth[1].depthStencil = { 1.0f, 0u };
 
 		// Handle resize event

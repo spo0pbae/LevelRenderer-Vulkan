@@ -79,7 +79,6 @@ public:
 
 	void CreateIndexBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice)
 	{
-		// Create Index buffer
 		GvkHelper::create_buffer(
 			_physicalDevice,
 			_device,
@@ -92,7 +91,6 @@ public:
 
 	void CreateStorageBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice, unsigned int _maxFrames)
 	{
-		/* CREATE STORAGE BUFFER */
 		m_storageHandle.resize(_maxFrames);
 		m_storageData.resize(_maxFrames);
 		for (int i = 0; i < _maxFrames; i++)
@@ -101,7 +99,7 @@ public:
 			GvkHelper::create_buffer(_physicalDevice, _device, sizeof(SHADER_MODEL_DATA),
 				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				&m_storageHandle[i], &m_storageData[i]); // changed from 0
+				&m_storageHandle[i], &m_storageData[i]);
 
 			GvkHelper::write_to_buffer(_device, m_storageData[i], &m_sceneData, sizeof(SHADER_MODEL_DATA));
 		}
@@ -132,7 +130,7 @@ public:
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType						= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		VkDescriptorPoolSize dpSize							= { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, _maxFrames };		// 4f changed from 1 // {type, count}
+		VkDescriptorPoolSize dpSize							= { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, _maxFrames };		// {type, count}
 		descriptorPoolCreateInfo.poolSizeCount				= 1;														// num of elements in pPoolSizes
 		descriptorPoolCreateInfo.pPoolSizes					= &dpSize;													// pointer to array of PoolSize structs, containing a type and number of descriptors
 		descriptorPoolCreateInfo.maxSets					= _maxFrames;												// max number of descriptor sets that CAN be allocated from the pool
@@ -193,14 +191,17 @@ public:
 
 	void Draw(VkPipelineLayout& _pipelineLayout, VkCommandBuffer& _commandBuffer)
 	{
-		for (int i = 0; i < 1; i++)//m_mesh.meshes.size(); i++)
+		for (int i = 0; i < m_mesh.meshes.size(); i++)
 		{
 			// send each mesh's material index to the shaders right before calling draw
 			vkCmdPushConstants(_commandBuffer, _pipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(uint32_t), &m_mesh.meshes[i].materialIndex);
-
-			vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);
+			
+			if (m_indexBuffer != nullptr)
+				vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);//m_mesh.meshes[0].drawInfo.indexOffset, 0, 0);
+			else
+				vkCmdDraw(_commandBuffer, m_mesh.vertexCount, 1, 0, 0);
 		}
 	}
 

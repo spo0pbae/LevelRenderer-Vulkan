@@ -55,13 +55,10 @@ public:
 		temp.LoadModels(m_models);
 
 		/* INITIALIZE SCENE DATA */
-		// WORLD MATRIX
-		//m_world = GW::MATH::GIdentityMatrixF;
-
 		// VIEW MATRIX
-		GW::MATH::GVECTORF eye{ 0.75f, 0.25f,-3.0f };	// eye position
-		GW::MATH::GVECTORF at { 0.15f, 0.75f, 0.0f };	// where it's looking
-		GW::MATH::GVECTORF up { 0.0f,  1.0f,  0.0f };	// how high up 
+		GW::MATH::GVECTORF eye { 0.75f, 1.0f,  3.0f };	// eye position
+		GW::MATH::GVECTORF at  {-0.15f, 0.75f, 0.0f };	// where it's looking
+		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };	// up direction 
 		m_mxMathProxy.LookAtLHF(eye, at, up, m_view);	// this performs the inverse operation
 
 		// PROJECTION MATRIX
@@ -70,9 +67,9 @@ public:
 		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
 
 		/* Lighting info */
-		GW::MATH::GVECTORF lightDir		{ -1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
-		GW::MATH::GVECTORF lightClr		{ 0.9f,  0.9f,  1.0f,  1.0f };					// mostly white with bluish tinge
-		GW::MATH::GVECTORF lightAmbient	{ 0.25f, 0.25f, 0.35f, 1.0f };
+		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
+		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.65f, 0.0f,  1.0f };					// orange tint
+		GW::MATH::GVECTORF lightAmbient	{ 0.25f,0.25f, 0.35f, 1.0f };
 
 		// NORMALIZE LIGHT DIRECTION
 		m_vecMathProxy.NormalizeF(lightDir, lightDir);
@@ -200,7 +197,7 @@ public:
 		rasterization_create_info.rasterizerDiscardEnable	= VK_FALSE;
 		rasterization_create_info.polygonMode				= VK_POLYGON_MODE_FILL;
 		rasterization_create_info.lineWidth					= 1.0f;
-		rasterization_create_info.cullMode					= VK_CULL_MODE_BACK_BIT;
+		rasterization_create_info.cullMode					= VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;		// triangle facing direction
 		rasterization_create_info.frontFace					= VK_FRONT_FACE_CLOCKWISE;
 		rasterization_create_info.depthClampEnable			= VK_FALSE;
 		rasterization_create_info.depthBiasEnable			= VK_FALSE;
@@ -314,19 +311,19 @@ public:
 
 	void InitShaders()
 	{
-		std::string vertexShaderSource = ShaderToString("../VertexShader.hlsl");
-		std::string pixelShaderSource = ShaderToString("../PixelShader.hlsl");
+		std::string vertexShaderSource		= ShaderToString("../VertexShader.hlsl");
+		std::string pixelShaderSource		= ShaderToString("../PixelShader.hlsl");
 
-		/* Intialize runtime shader compiler HLSL->SPIRV */
-		shaderc_compiler_t compiler = shaderc_compiler_initialize();
-		shaderc_compile_options_t options = shaderc_compile_options_initialize();
+		// Intialize runtime shader compiler HLSL->SPIRV
+		shaderc_compiler_t compiler			= shaderc_compiler_initialize();
+		shaderc_compile_options_t options	= shaderc_compile_options_initialize();
 		shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
 		shaderc_compile_options_set_invert_y(options, false); // enable/disable Y inversion
 
 #ifndef NDEBUG
 		shaderc_compile_options_set_generate_debug_info(options);
 #endif
-		// Create Vertex Shader
+		// VERTEX SHADER
 		shaderc_compilation_result_t result = shaderc_compile_into_spv( // compile
 			compiler, vertexShaderSource.c_str(), strlen(vertexShaderSource.c_str()),
 			shaderc_vertex_shader, "main.vert", "main", options);
@@ -339,7 +336,7 @@ public:
 
 		shaderc_result_release(result); // done
 
-		// Create Pixel Shader
+		// PIXEL SHADER
 		result = shaderc_compile_into_spv( // compile
 			compiler, pixelShaderSource.c_str(), strlen(pixelShaderSource.c_str()),
 			shaderc_fragment_shader, "main.frag", "main", options);
@@ -359,8 +356,14 @@ public:
 
 	void Render()
 	{
-		for (auto &m : m_models)
-		m.m_sceneData.viewMatrix = m_view;
+		/* Update specular component and view matrix */
+		for (int i = 0; i < m_models.size(); i++)
+		{
+			GW::MATH::GMATRIXF inverseView;
+			m_mxMathProxy.InverseF(m_view, inverseView);
+			m_models[i].m_sceneData.camPos		= inverseView.row4;
+			m_models[i].m_sceneData.viewMatrix	= m_view;
+		}
 
 		/* Grab the current Vulkan commandBuffer */
 		unsigned int currentBuffer;
@@ -368,12 +371,12 @@ public:
 		VkCommandBuffer commandBuffer;
 		vlk.GetCommandBuffer(currentBuffer, (void**)&commandBuffer);
 
-		/* what is the current client area dimensions? */
+		/* What is the current client area dimensions? */
 		unsigned int width, height;
 		win.GetClientWidth(width);
 		win.GetClientHeight(height);
 
-		/* setup the pipeline's dynamic settings */
+		/* Setup the pipeline's dynamic settings */
 		VkViewport viewport =
 		{
 			0, 0, static_cast<float>(width), static_cast<float>(height), 0, 1
@@ -395,20 +398,18 @@ public:
 	void UpdateCamera()
 	{
 		m_timer.Signal();
-		float delta = m_timer.Delta();
 
 		// Set view matrix back to world space
 		GW::MATH::GMATRIXF viewCopy;
 		m_mxMathProxy.InverseF(m_view, viewCopy);
 
-		float ychange			= 0.0f;		// represents how much we want the y value to change this frame
-		const float camSpeed	= 2.5f;		// Represents how far we want the camera to be able to move over one second
+		float delta							= m_timer.Delta();
+		float ychange						= 0.0f;				// represents how much we want the 'y' value to change this frame
+		const float camSpeed				= 2.0f;				// Represents how far we want the camera to be able to move over one second
 
 		// Vertical input states
-		float spacePressed		= 0.0f;
-		float lshiftPressed		= 0.0f;
-		float rtPressed			= 0.0f;
-		float ltPressed			= 0.0f;
+		float spacePressed, lshiftPressed	= 0.0f;				// keyboard
+		float rtPressed, ltPressed			= 0.0f;				// controller
 
 		// Get vertical input states
 		m_inputProxy.GetState(G_KEY_SPACE, spacePressed);
@@ -425,19 +426,15 @@ public:
 
 		// Handle WASD movement
 		GW::MATH::GVECTORF translateMx;
-		float perFrameSpeed = camSpeed * delta;
-		float xChange	= 0.0f;
-		float zChange	= 0.0f;
+		float perFrameSpeed		= camSpeed * delta;
+		float xChange, zChange	= 0.0f;
 
 		// wasd strafing keystates
-		float wPressed	= 0.0f;
-		float aPressed	= 0.0f;
-		float sPressed	= 0.0f;
-		float dPressed	= 0.0f;
+		float wPressed, aPressed, 
+			sPressed, dPressed  = 0.0f;
 
 		// left stick movement states
-		float lStickX	= 0.0f;
-		float lStickY	= 0.0f;
+		float lStickX, lStickY	= 0.0f;
 
 		// WASD
 		m_inputProxy.GetState(G_KEY_W, wPressed);
@@ -463,22 +460,19 @@ public:
 		win.GetClientWidth(screenWidth);
 		win.GetClientHeight(screenHeight);
 
-		float pi			= 3.14159f;
-		float thumbSpeed	= pi * delta;
-		float totalPitch	= 0.0f; 		// pitch is essentially vertical tilt (X rotation)
-		float totalYaw		= 0.0f;
+		float pi					= 3.14159f;
+		float thumbSpeed			= pi * delta;
+		float totalPitch, totalYaw	= 0.0f;
 
 		// Right stick states
-		float rStickX		= 0.0f;
-		float rStickY		= 0.0f;
+		float rStickX, rStickY		= 0.0f;
 
 		// right controller stick
 		m_controllerProxy.GetState(0, G_RX_AXIS, rStickX);
 		m_controllerProxy.GetState(0, G_RY_AXIS, rStickY);
 
 		// Mouse deltas
-		float mX = 0.0f;
-		float mY = 0.0f;
+		float mX, mY = 0.0f;
 
 		// Get mouse input
 		GW::GReturn res = m_inputProxy.GetMouseDelta(mX, mY);
