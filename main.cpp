@@ -70,9 +70,7 @@ int main()
 
 					// change level
 					if (GetAsyncKeyState(VK_TAB))
-					{
 						renderer.ChangeLevel();
-					}
 				}
 			}
 		}
