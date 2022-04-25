@@ -20,14 +20,6 @@ class Model
 private:
 	friend class Renderer;
 
-	// Collect the mesh names and their matrices
-	struct GameLevelData
-	{
-		std::vector<H2B::Parser> modelData;				// every mesh in the level
-		std::vector<std::string> modelNames;
-		std::vector<GW::MATH::GMATRIXF> modelMatrices;
-	};
-
 	// Create struct for shader model data to be passed into the shaders
 	struct SHADER_MODEL_DATA
 	{
@@ -40,7 +32,6 @@ private:
 		H2B::ATTRIBUTES			materials[MAX_SUBMESH_PER_DRAW]; // color/texture of surface
 	};
 	SHADER_MODEL_DATA			m_sceneData			= { 0 };
-	GameLevelData				m_levelData			= {};
 
 	// MODEL SPECIFIC MEMBERS
 	H2B::Parser					m_mesh;
@@ -228,112 +219,4 @@ public:
 		// Clean up descriptor pool
 		vkDestroyDescriptorPool(_device, m_descriptorPool, nullptr);
 	}
-
-	// Runs the parser and populates a vector of Models
-	// This is done so we can group all of them together and then bind/draw them individually in the renderer
-	// IN: reference to a vector of models to be filled
-	void LoadModels(std::vector<Model> &_models)
-	{
-			//ParseH2B(m_levelData, std::string("../FoxTest.txt"));		// Test level
-		ParseH2B(m_levelData, std::string("../GameLevel.txt"));		// Real level
-		for (int i = 0; i < m_levelData.modelData.size(); i++)
-		{
-			Model temp;
-			temp.m_mesh = m_levelData.modelData[i];
-			_models.push_back(temp);
-		}
-	}
-
-	private: 
-		void ParseH2B(GameLevelData& _data, std::string& _filePath)
-		{
-			H2B::Parser p;
-			std::string line = " ";
-			std::string prevName = " ";
-			std::string ignore[2] = { "<Matrix" , "4x4" };
-			GW::MATH::GMATRIXF tempMatrix = { 0 };
-			int ndx = 0;
-			std::vector<std::string> tempNames;
-
-			std::ifstream file{ _filePath, std::ios::in };		// Open file
-
-			if (!file.is_open())
-				std::cout << "Could not open file!\n";
-			else
-			{
-				// GET NAMES
-				while (!file.eof())
-				{
-					std::getline(file, line);
-					if (line == "MESH")							// If we find the mesh
-					{
-						std::getline(file, line, '.');			// Get the next line to retrieve the mesh name
-						tempNames.push_back(line);
-						std::getline(file, line);
-					}
-				}
-			}
-			file.clear();
-			file.seekg(0);
-			// GET MATRIX DATA
-			while (!file.eof())									// enter an infinite loop (exit if nothing to read)
-			{
-				std::getline(file, line);						// read current line of text up to the new line
-				if (line == "MESH")								// check if you found mesh
-				{
-					std::getline(file, line);					// Skip name line to get to the matrix
-					for (int i = 0; i < 4; i++)					// loop through each row
-					{
-						char temp[250];
-						char* getfloat;
-
-						std::getline(file, line);				// Get the 'i'th row of the matrix
-						strcpy(temp, line.c_str());				// convert to char*
-						getfloat = strtok(temp, " (,)");		// Get first token in the row
-
-						while (getfloat != NULL)				// walk through the rest of the tokens in the row
-						{
-							if (getfloat != ignore[0] && getfloat != ignore[1])
-							{
-								float stof = atof(getfloat);
-								tempMatrix.data[ndx] = stof;
-								ndx++; // only increment ndx if we put something in it
-							}
-							getfloat = strtok(NULL, " (,)>");	// Get next token
-
-							// Once the last element is filled, push into vector and reset
-							if (ndx == 16)
-							{
-								_data.modelMatrices.push_back(tempMatrix);
-								tempMatrix = { 0 };
-								ndx = 0;
-							}
-						} // Walk through Token
-					} // For every row in the Matrix
-				} // if "MESH"
-			} // !eof
-
-			// store actual names in mesh vector
-			for (int i = 0; i < tempNames.size(); i++)
-			{
-				char* path = nullptr;
-				char tempPath[75];
-
-				_data.modelNames.push_back(tempNames[i]);
-
-				// check h2b path
-				std::string temp = "../Assets/";
-				temp.append(_data.modelNames[i]);
-				temp.append(".h2b");
-
-				strcpy(tempPath, temp.c_str());
-				path = tempPath;
-
-				p.Parse(path);
-				_data.modelData.push_back(p);
-				prevName = _data.modelNames[i];
-			}
-			// All done!
-			file.close();
-		}
 };

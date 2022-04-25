@@ -67,6 +67,12 @@ int main()
 					renderer.UpdateCamera();
 					renderer.Render();
 					vulkan.EndFrame(true);
+
+					// change level
+					if (GetAsyncKeyState(VK_TAB))
+					{
+						renderer.ChangeLevel();
+					}
 				}
 			}
 		}

@@ -4,6 +4,15 @@
 // Creation, Rendering & Cleanup
 class Renderer
 {
+	// Collect the mesh names and their matrices
+	struct GameLevelData
+	{
+		std::vector<H2B::Parser> modelData;				// every mesh in the level
+		std::vector<std::string> modelNames;
+		std::vector<GW::MATH::GMATRIXF> modelMatrices;
+	};
+	GameLevelData				m_levelData = {};
+
 	// proxy handles
 	GW::SYSTEM::GWindow				win;
 	GW::GRAPHICS::GVulkanSurface	vlk;
@@ -35,6 +44,9 @@ class Renderer
 	float m_ar	= 0.0f;
 
 public:
+
+	bool m_levelFlag = false;
+
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	{
 		// Get Client Dimensions 
@@ -50,60 +62,8 @@ public:
 		m_inputProxy.Create(win);
 		m_controllerProxy.Create();
 
-		// Separate out the models so we can give them their own buffers
-		Model temp;
-		temp.LoadModels(m_models);
-
 		/* INITIALIZE SCENE DATA */
-		// VIEW MATRIX
-		GW::MATH::GVECTORF eye { 0.75f, 1.0f,  3.0f };	// eye position
-		GW::MATH::GVECTORF at  {-0.15f, 0.75f, 0.0f };	// where it's looking
-		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };	// up direction 
-		m_mxMathProxy.LookAtLHF(eye, at, up, m_view);	// this performs the inverse operation
-
-		// PROJECTION MATRIX
-		_vlk.GetAspectRatio(m_ar);
-		m_fov = DegreesToRadians(65);
-		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
-
-		/* Lighting info */
-		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
-		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.65f, 0.0f,  1.0f };					// orange tint
-		GW::MATH::GVECTORF lightAmbient	{ 0.25f,0.25f, 0.35f, 1.0f };
-
-		// NORMALIZE LIGHT DIRECTION
-		m_vecMathProxy.NormalizeF(lightDir, lightDir);
-
-		// take the view's position from world space (put it back in world space)
-		GW::MATH::GMATRIXF inverseView;
-		m_mxMathProxy.InverseF(m_view, inverseView);
-		GW::MATH::GVECTORF camPos = inverseView.row4;
-
-		for (int i = 0; i < temp.m_levelData.modelData.size(); i++)
-		{
-			// copy the level data
-			m_models[i].m_levelData.modelData		= temp.m_levelData.modelData;
-			m_models[i].m_levelData.modelNames		= temp.m_levelData.modelNames;
-			m_models[i].m_levelData.modelMatrices	= temp.m_levelData.modelMatrices;
-
-			// set each model's world matrix and scene data
-			m_models[i].m_sceneData.matricies[0]	= temp.m_levelData.modelMatrices[i];
-
-			m_models[i].m_sceneData.sunDirection	= lightDir;
-			m_models[i].m_sceneData.sunColor		= lightClr;
-			m_models[i].m_sceneData.sunAmbient		= lightAmbient;
-			m_models[i].m_sceneData.camPos			= camPos;
-			m_models[i].m_sceneData.viewMatrix		= m_view;
-			m_models[i].m_sceneData.projMatrix		= m_projection;
-		}
-
-		// for each model
-		for (auto &m : m_models)
-		{
-			// for each material, set the scene data's materials
-			for (int i = 0; i < m.m_mesh.materialCount; ++i)
-				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
-		}
+		InitSceneData(vlk);
 
 		/***************** GEOMETRY INTIALIZATION ******************/
 		/* Grab the device & physical device so we can allocate some stuff */
@@ -395,6 +355,80 @@ public:
 		}
 	}
 
+	void InitSceneData(GW::GRAPHICS::GVulkanSurface _vlk)
+	{
+		// Separate out the models so we can give them their own buffers
+		std::string level;
+		if (m_levelFlag == false)
+			level = "../GameLevel.txt";
+		else
+			level = "../FoxTest.txt";
+
+		LoadModels(m_models, level);
+
+		// VIEW MATRIX
+		GW::MATH::GVECTORF eye { 0.75f, 2.0f,  3.0f };	// eye position
+		GW::MATH::GVECTORF at  {-0.15f, 0.75f, 0.0f };	// where it's looking
+		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };	// up direction 
+		m_mxMathProxy.LookAtLHF(eye, at, up, m_view);	// this performs the inverse operation
+
+		// PROJECTION MATRIX
+		_vlk.GetAspectRatio(m_ar);
+		m_fov = DegreesToRadians(65);
+		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
+
+		/* Lighting info */
+		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
+		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.55f, 0.0f,  1.0f };					// orange tint
+		GW::MATH::GVECTORF lightAmbient	{ 0.25f,0.25f, 0.35f, 1.0f };
+
+		// NORMALIZE LIGHT DIRECTION
+		m_vecMathProxy.NormalizeF(lightDir, lightDir);
+
+		// Take the view's position from world space (put it back in world space)
+		GW::MATH::GMATRIXF inverseView;
+		m_mxMathProxy.InverseF(m_view, inverseView);
+		GW::MATH::GVECTORF camPos = inverseView.row4;
+
+		for (int i = 0; i < m_levelData.modelData.size(); i++)
+		{
+			// set each model's world matrix and scene data
+			m_models[i].m_sceneData.matricies[0]	= m_levelData.modelMatrices[i];
+
+			m_models[i].m_sceneData.sunDirection	= lightDir;
+			m_models[i].m_sceneData.sunColor		= lightClr;
+			m_models[i].m_sceneData.sunAmbient		= lightAmbient;
+			m_models[i].m_sceneData.camPos			= camPos;
+			m_models[i].m_sceneData.viewMatrix		= m_view;
+			m_models[i].m_sceneData.projMatrix		= m_projection;
+		}
+
+		// for each model
+		for (auto &m : m_models)
+		{
+			// for each material, set the scene data's materials
+			for (int i = 0; i < m.m_mesh.materialCount; ++i)
+				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
+		}
+	}
+
+	void ChangeLevel()
+	{
+		if (m_levelFlag == false) 
+			m_levelFlag == true;
+		else 
+			m_levelFlag == false;
+
+		// clean up all data
+		CleanUp();
+
+		// clear the scene data
+		m_levelData.modelData.clear();
+		m_levelData.modelMatrices.clear();
+		m_levelData.modelNames.clear();
+		m_models.clear();
+	}
+
 	void UpdateCamera()
 	{
 		m_timer.Signal();
@@ -508,7 +542,114 @@ public:
 		return output;
 	}
 
+	// Runs the parser and populates a vector of Models
+// This is done so we can group all of them together and then bind/draw them individually in the renderer
+// IN: reference to a vector of models to be filled
+	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
+	{
+		//ParseH2B(m_levelData, std::string("../FoxTest.txt"));		// Test level
+		ParseH2B(m_levelData, _gameLevelPath);		// Real level
+		for (int i = 0; i < m_levelData.modelData.size(); i++)
+		{
+			Model temp;
+			temp.m_mesh = m_levelData.modelData[i];
+			_models.push_back(temp);
+		}
+	}
+
 private:
+	void ParseH2B(GameLevelData& _data, std::string& _filePath)
+	{
+		H2B::Parser p;
+		std::string line = " ";
+		std::string prevName = " ";
+		std::string ignore[2] = { "<Matrix" , "4x4" };
+		GW::MATH::GMATRIXF tempMatrix = { 0 };
+		int ndx = 0;
+		std::vector<std::string> tempNames;
+
+		std::ifstream file{ _filePath, std::ios::in };		// Open file
+
+		if (!file.is_open())
+			std::cout << "Could not open file!\n";
+		else
+		{
+			// GET NAMES
+			while (!file.eof())
+			{
+				std::getline(file, line);
+				if (line == "MESH")							// If we find the mesh
+				{
+					std::getline(file, line, '.');			// Get the next line to retrieve the mesh name
+					tempNames.push_back(line);
+					std::getline(file, line);
+				}
+			}
+		}
+		file.clear();
+		file.seekg(0);
+		// GET MATRIX DATA
+		while (!file.eof())									// enter an infinite loop (exit if nothing to read)
+		{
+			std::getline(file, line);						// read current line of text up to the new line
+			if (line == "MESH")								// check if you found mesh
+			{
+				std::getline(file, line);					// Skip name line to get to the matrix
+				for (int i = 0; i < 4; i++)					// loop through each row
+				{
+					char temp[250];
+					char* getfloat;
+
+					std::getline(file, line);				// Get the 'i'th row of the matrix
+					strcpy(temp, line.c_str());				// convert to char*
+					getfloat = strtok(temp, " (,)");		// Get first token in the row
+
+					while (getfloat != NULL)				// walk through the rest of the tokens in the row
+					{
+						if (getfloat != ignore[0] && getfloat != ignore[1])
+						{
+							float stof = atof(getfloat);
+							tempMatrix.data[ndx] = stof;
+							ndx++; // only increment ndx if we put something in it
+						}
+						getfloat = strtok(NULL, " (,)>");	// Get next token
+
+						// Once the last element is filled, push into vector and reset
+						if (ndx == 16)
+						{
+							_data.modelMatrices.push_back(tempMatrix);
+							tempMatrix = { 0 };
+							ndx = 0;
+						}
+					} // Walk through Token
+				} // For every row in the Matrix
+			} // if "MESH"
+		} // !eof
+
+		// store actual names in mesh vector
+		for (int i = 0; i < tempNames.size(); i++)
+		{
+			char* path = nullptr;
+			char tempPath[75];
+
+			_data.modelNames.push_back(tempNames[i]);
+
+			// check h2b path
+			std::string temp = "../Assets/";
+			temp.append(_data.modelNames[i]);
+			temp.append(".h2b");
+
+			strcpy(tempPath, temp.c_str());
+			path = tempPath;
+
+			p.Parse(path);
+			_data.modelData.push_back(p);
+			prevName = _data.modelNames[i];
+		}
+		// All done!
+		file.close();
+	}
+
 	void CleanUp()
 	{
 		// wait till everything has completed
