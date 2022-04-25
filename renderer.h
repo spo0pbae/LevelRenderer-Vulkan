@@ -26,8 +26,6 @@ class Renderer
 	VkPipeline						m_pipeline			= nullptr;
 	VkPipelineLayout				m_pipelineLayout	= nullptr;
 
-	VkRenderPass					m_renderPass;
-
 	// Shader modules
 	VkShaderModule					m_vertexShader		= nullptr;
 	VkShaderModule					m_pixelShader		= nullptr;
@@ -44,8 +42,8 @@ class Renderer
 
 	float m_fov, m_ar = 0.0f;
 	unsigned int m_width, m_height = 0;
-public:
 
+public:
 	bool m_levelFlag = false;
 
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
@@ -82,9 +80,9 @@ public:
 		InitShaders();
 
 		/***************** PIPELINE INTIALIZATION ****************/
-		//VkRenderPass renderPass;
-		vlk.GetRenderPass((void**)&m_renderPass);
-		InitPipeline(m_width, m_height, m_renderPass);
+		VkRenderPass renderPass;
+		vlk.GetRenderPass((void**)&renderPass);
+		InitPipeline(m_width, m_height, renderPass);
 
 		/***************** CLEANUP / SHUTDOWN ******************/
 		// GVulkanSurface will inform us when to release any allocated resources
@@ -135,14 +133,14 @@ public:
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
 			// set each model's world matrix and scene data
-			m_models[i].m_sceneData.matricies[0] = m_levelData.modelMatrices[i];
+			m_models[i].m_sceneData.matricies[0]	= m_levelData.modelMatrices[i];
 
-			m_models[i].m_sceneData.sunDirection = lightDir;
-			m_models[i].m_sceneData.sunColor = lightClr;
-			m_models[i].m_sceneData.sunAmbient = lightAmbient;
-			m_models[i].m_sceneData.camPos = camPos;
-			m_models[i].m_sceneData.viewMatrix = m_view;
-			m_models[i].m_sceneData.projMatrix = m_projection;
+			m_models[i].m_sceneData.sunDirection	= lightDir;
+			m_models[i].m_sceneData.sunColor		= lightClr;
+			m_models[i].m_sceneData.sunAmbient		= lightAmbient;
+			m_models[i].m_sceneData.camPos			= camPos;
+			m_models[i].m_sceneData.viewMatrix		= m_view;
+			m_models[i].m_sceneData.projMatrix		= m_projection;
 		}
 
 		// for each model
@@ -424,37 +422,40 @@ public:
 
 	void ChangeLevel()
 	{
-		// 
-		if (m_levelFlag == false) 
+		
+		if (m_levelFlag == false)
 			m_levelFlag = true;
-		else 
+		
+		else
 			m_levelFlag = false;
+			
+		// Clean up and clear the scene/model data
+		CleanUp();
 
-			// clean up all data
-		//CleanUp();
-
-		// clear the scene data
 		m_levelData.modelData.clear();
 		m_levelData.modelMatrices.clear();
 		m_levelData.modelNames.clear();
 		m_models.clear();
 
-		//m_device			= nullptr;
-		//m_pipeline		= nullptr;
-		//m_pipelineLayout	= nullptr;
-
+		// Re-initialize scene data
 		InitSceneData(vlk);
+		m_models.resize(m_models.size());
 
+		// Re-initialize geometry
 		VkPhysicalDevice physicalDevice = nullptr;
 		vlk.GetDevice((void**)&m_device);
 		vlk.GetPhysicalDevice((void**)&physicalDevice);
 		unsigned int maxFrames = 0;
 		vlk.GetSwapchainImageCount(maxFrames);
-
 		InitGeometry(physicalDevice, maxFrames);
 
-		//InitShaders();
-		InitPipeline(m_width, m_height, m_renderPass);
+		// Re-initialize shaders
+		InitShaders();
+
+		// Re-initialize pipeline
+		VkRenderPass renderPass;
+		vlk.GetRenderPass((void**)&renderPass);
+		InitPipeline(m_width, m_height, renderPass);
 	}
 
 	void UpdateCamera()

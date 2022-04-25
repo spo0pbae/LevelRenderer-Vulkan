@@ -27,6 +27,7 @@ int main()
 	GWindow win;
 	GEventResponder msgs;
 	GVulkanSurface vulkan;
+	GW::INPUT::GInput input;
 
 	if (+win.Create(0, 0, 800, 600, GWindowStyle::WINDOWEDBORDERED))
 	{
@@ -68,8 +69,8 @@ int main()
 					renderer.Render();
 					vulkan.EndFrame(true);
 
-					// change level
-					if (GetAsyncKeyState(VK_TAB))
+					// Change level
+					if (GetAsyncKeyState(VK_F1))
 						renderer.ChangeLevel();
 				}
 			}
