@@ -40,12 +40,11 @@ class Renderer
 
 	XTime m_timer;
 
-	float m_fov, m_ar = 0.0f;
-	unsigned int m_width, m_height = 0;
+	float m_fov, m_ar				= 0.0f;
+	unsigned int m_width, m_height	= 0;
+	bool m_levelFlag				= false;
 
 public:
-	bool m_levelFlag = false;
-
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	{
 		// Get Client Dimensions 
@@ -102,7 +101,7 @@ public:
 		if (m_levelFlag == false)
 			level = "../GameLevel.txt";
 		else
-			level = "../FoxTest.txt";
+			level = "../GameLevel2.txt";
 
 		LoadModels(m_models, level);
 
@@ -422,12 +421,8 @@ public:
 
 	void ChangeLevel()
 	{
-		
-		if (m_levelFlag == false)
-			m_levelFlag = true;
-		
-		else
-			m_levelFlag = false;
+		if (m_levelFlag == false) { m_levelFlag = true; }
+		else { m_levelFlag = false; }
 			
 		// Clean up and clear the scene/model data
 		CleanUp();

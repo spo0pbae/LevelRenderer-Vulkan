@@ -46,7 +46,7 @@ private:
 	std::vector<VkBuffer>		m_storageHandle;
 	std::vector<VkDeviceMemory> m_storageData;
 
-	// Extend the descriptor set into a vector ; we want one per storage buffer
+	// One descriptor set per storage buffer
 	std::vector<VkDescriptorSet> m_descriptorSet;
 
 	// Handle to descriptor set layout and descriptor pool
