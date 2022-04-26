@@ -54,7 +54,6 @@ private:
 	VkDescriptorPool			m_descriptorPool	= nullptr;
 
 public:
-
 	// CREATE PER-MODEL BUFFERS
 	void CreateVertexBuffer(VkDevice &_device, VkPhysicalDevice &_physicalDevice)
 	{

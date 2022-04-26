@@ -4,6 +4,7 @@
 #define GATEWARE_ENABLE_GRAPHICS			// Enables all Graphics Libraries
 #define GATEWARE_ENABLE_MATH				// Enables Gateware math libraries
 #define GATEWARE_ENABLE_INPUT				// Enables Gateware input libraries
+#define GATEWARE_ENABLE_AUDIO				// Enables Gateware audio libraries
 
 // Ignore some GRAPHICS libraries we aren't going to use
 #define GATEWARE_DISABLE_GDIRECTX11SURFACE	// we have another template for this

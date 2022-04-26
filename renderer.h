@@ -21,6 +21,9 @@ class Renderer
 	GW::INPUT::GController			m_controllerProxy;
 	GW::MATH::GMatrix				m_mxMathProxy;
 	GW::MATH::GVector				m_vecMathProxy;
+	GW::AUDIO::GMusic				m_musicProxy;
+	GW::AUDIO::GAudio				m_audio;
+	GW::AUDIO::GSound				m_sound;
 
 	// Device and pipeline objects
 	VkDevice						m_device			= nullptr;
@@ -39,7 +42,7 @@ class Renderer
 	GW::MATH::GMATRIXF				m_projection;
 
 	// Used to compute delta time
-	XTime m_timer;
+	XTime							m_timer;
 
 	// Flag for toggling level
 	bool m_levelFlag = false;
@@ -50,6 +53,9 @@ class Renderer
 public:
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	{
+		const char* musicPath = "../Assets/Audio/Dungeon.wav";
+		const char* soundPath = "../Assets/Audio/Success.wav";
+
 		// Get Client Dimensions 
 		win = _win;
 		vlk = _vlk;
@@ -62,6 +68,9 @@ public:
 		m_mxMathProxy.Create();
 		m_inputProxy.Create(win);
 		m_controllerProxy.Create();
+		m_audio.Create();
+		m_sound.Create(soundPath, m_audio, 0.005f);
+		m_musicProxy.Create(musicPath, m_audio, 0.005f); // it's very loud!!
 
 		/* INITIALIZE SCENE DATA */
 		InitSceneData(vlk);
@@ -85,6 +94,9 @@ public:
 		VkRenderPass renderPass;
 		vlk.GetRenderPass((void**)&renderPass);
 		InitPipeline(m_width, m_height, renderPass);
+
+		// Play music
+		m_musicProxy.Play(true);
 
 		/***************** CLEANUP / SHUTDOWN ********************/
 		// GVulkanSurface will inform us when to release any allocated resources
@@ -174,12 +186,12 @@ public:
 
 	void InitShaders()
 	{
-		std::string vertexShaderSource = ShaderToString("../VertexShader.hlsl");
-		std::string pixelShaderSource = ShaderToString("../PixelShader.hlsl");
+		std::string vertexShaderSource		= ShaderToString("../VertexShader.hlsl");
+		std::string pixelShaderSource		= ShaderToString("../PixelShader.hlsl");
 
 		// Intialize runtime shader compiler HLSL->SPIRV
-		shaderc_compiler_t compiler = shaderc_compiler_initialize();
-		shaderc_compile_options_t options = shaderc_compile_options_initialize();
+		shaderc_compiler_t compiler			= shaderc_compiler_initialize();
+		shaderc_compile_options_t options	= shaderc_compile_options_initialize();
 		shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
 		shaderc_compile_options_set_invert_y(options, false); // enable/disable Y inversion
 
@@ -425,6 +437,9 @@ public:
 
 	void ChangeLevel()
 	{
+		// Play a sound upon changing the scene
+		m_sound.Play();
+
 		// Change the level flag
 		m_levelFlag = (false) ? m_levelFlag == true : m_levelFlag == false;
 			
@@ -579,12 +594,6 @@ public:
 			temp.m_mesh = m_levelData.modelData[i];
 			_models.push_back(temp);
 		}
-	}
-
-	// Maybe add a sound effect
-	void PlaySound()
-	{
-
 	}
 
 private:
