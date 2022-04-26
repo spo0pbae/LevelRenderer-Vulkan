@@ -7,9 +7,9 @@ class Renderer
 	// Collect the mesh names and their matrices
 	struct GameLevelData
 	{
-		std::vector<H2B::Parser> modelData;				// every mesh in the level
-		std::vector<std::string> modelNames;
-		std::vector<GW::MATH::GMATRIXF> modelMatrices;
+		std::vector<H2B::Parser> modelData;				// Every mesh in the level
+		std::vector<std::string> modelNames;			// Names of each model
+		std::vector<GW::MATH::GMATRIXF> modelMatrices;  // model world matrices 
 	};
 	GameLevelData					m_levelData = {};
 
@@ -22,6 +22,7 @@ class Renderer
 	GW::MATH::GMatrix				m_mxMathProxy;
 	GW::MATH::GVector				m_vecMathProxy;
 
+	// Device and pipeline objects
 	VkDevice						m_device			= nullptr;
 	VkPipeline						m_pipeline			= nullptr;
 	VkPipelineLayout				m_pipelineLayout	= nullptr;
@@ -33,16 +34,18 @@ class Renderer
 	// Models
 	std::vector<Model>				m_models;
 
-	// Create matrices
-	GW::MATH::GMATRIXF				m_world;
+	// Camera matrices
 	GW::MATH::GMATRIXF				m_view;
 	GW::MATH::GMATRIXF				m_projection;
 
+	// Used to compute delta time
 	XTime m_timer;
+
+	// Flag for toggling level
+	bool m_levelFlag = false;
 
 	float m_fov, m_ar				= 0.0f;
 	unsigned int m_width, m_height	= 0;
-	bool m_levelFlag				= false;
 
 public:
 	Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
@@ -63,7 +66,7 @@ public:
 		/* INITIALIZE SCENE DATA */
 		InitSceneData(vlk);
 
-		/***************** GEOMETRY INTIALIZATION ******************/
+		/***************** GEOMETRY INTIALIZATION ****************/
 		// Grab the device & physical device so we can allocate some stuff
 		VkPhysicalDevice physicalDevice = nullptr;
 		vlk.GetDevice((void**)&m_device);
@@ -83,7 +86,7 @@ public:
 		vlk.GetRenderPass((void**)&renderPass);
 		InitPipeline(m_width, m_height, renderPass);
 
-		/***************** CLEANUP / SHUTDOWN ******************/
+		/***************** CLEANUP / SHUTDOWN ********************/
 		// GVulkanSurface will inform us when to release any allocated resources
 		shutdown.Create(vlk, [&]()
 			{
@@ -96,13 +99,14 @@ public:
 
 	void InitSceneData(GW::GRAPHICS::GVulkanSurface _vlk)
 	{
-		// Separate out the models so we can give them their own buffers
+		// Determine which level to load
 		std::string level;
 		if (m_levelFlag == false)
 			level = "../GameLevel.txt";
 		else
 			level = "../GameLevel2.txt";
 
+		// Separate out the per-level models into their own objects
 		LoadModels(m_models, level);
 
 		// VIEW MATRIX
@@ -114,14 +118,14 @@ public:
 		// PROJECTION MATRIX
 		_vlk.GetAspectRatio(m_ar);
 		m_fov = DegreesToRadians(65);
-		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);	// left handed projection matrix(fov, ar, z near, z far, outMx)
+		m_mxMathProxy.ProjectionVulkanLHF(m_fov, m_ar, 0.1f, 100.0f, m_projection);
 
-		/* Lighting info */
-		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// adding 0 here because direction wants w = 0
+		// LIGHTING INFO
+		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// direction wants w = 0
 		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.55f, 0.0f,  1.0f };					// orange tint
 		GW::MATH::GVECTORF lightAmbient { 0.25f,0.25f, 0.35f, 1.0f };
 
-		// NORMALIZE LIGHT DIRECTION
+		// Normalize light direction before sending to shaders
 		m_vecMathProxy.NormalizeF(lightDir, lightDir);
 
 		// Take the view's position from world space (put it back in world space)
@@ -145,7 +149,7 @@ public:
 		// for each model
 		for (auto& m : m_models)
 		{
-			// for each material, set the scene data's materials
+			// For each material, set the scene data's materials
 			for (int i = 0; i < m.m_mesh.materialCount; ++i)
 				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
 		}
@@ -380,7 +384,7 @@ public:
 
 	void Render()
 	{
-		/* Update specular component and view matrix */
+		// Update specular component and view matrix
 		for (int i = 0; i < m_models.size(); i++)
 		{
 			GW::MATH::GMATRIXF inverseView;
@@ -389,18 +393,18 @@ public:
 			m_models[i].m_sceneData.viewMatrix	= m_view;
 		}
 
-		/* Grab the current Vulkan commandBuffer */
+		// Grab the current Vulkan commandBuffer */
 		unsigned int currentBuffer;
 		vlk.GetSwapchainCurrentImage(currentBuffer);
 		VkCommandBuffer commandBuffer;
 		vlk.GetCommandBuffer(currentBuffer, (void**)&commandBuffer);
 
-		/* What is the current client area dimensions? */
+		// What is the current client area dimensions?
 		unsigned int width, height;
 		win.GetClientWidth(width);
 		win.GetClientHeight(height);
 
-		/* Setup the pipeline's dynamic settings */
+		// Setup the pipeline's dynamic settings
 		VkViewport viewport =
 		{
 			0, 0, static_cast<float>(width), static_cast<float>(height), 0, 1
@@ -411,7 +415,7 @@ public:
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		/* BIND AND DRAW EACH MODEL */
+		// Bind and draw each model
 		for (auto &m : m_models)
 		{
 			m.BindBuffers(m_device, m_pipelineLayout, commandBuffer, currentBuffer);
@@ -421,12 +425,11 @@ public:
 
 	void ChangeLevel()
 	{
-		if (m_levelFlag == false) { m_levelFlag = true; }
-		else { m_levelFlag = false; }
+		// Change the level flag
+		m_levelFlag = (false) ? m_levelFlag == true : m_levelFlag == false;
 			
 		// Clean up and clear the scene/model data
 		CleanUp();
-
 		m_levelData.modelData.clear();
 		m_levelData.modelMatrices.clear();
 		m_levelData.modelNames.clear();
@@ -569,14 +572,19 @@ public:
 	// Runs the parser and populates a vector of Models
 	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
 	{
-		//ParseH2B(m_levelData, std::string("../FoxTest.txt"));		// Test level
-		ParseH2B(m_levelData, _gameLevelPath);		// Real level
+		ParseH2B(m_levelData, _gameLevelPath);
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
 			Model temp;
 			temp.m_mesh = m_levelData.modelData[i];
 			_models.push_back(temp);
 		}
+	}
+
+	// Maybe add a sound effect
+	void PlaySound()
+	{
+
 	}
 
 private:

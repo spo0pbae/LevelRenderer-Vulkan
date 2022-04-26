@@ -36,7 +36,7 @@ private:
 	// MODEL SPECIFIC MEMBERS
 	H2B::Parser					m_mesh;
 
-	// Create Vertex/Index buffer handles
+	// Vertex/Index buffer handles
 	VkBuffer					m_vertexBuffer		= nullptr;
 	VkDeviceMemory				m_vertexData		= nullptr;
 	VkBuffer					m_indexBuffer		= nullptr;
@@ -182,13 +182,14 @@ public:
 
 	void Draw(VkPipelineLayout& _pipelineLayout, VkCommandBuffer& _commandBuffer)
 	{
+		// for each submesh
 		for (int i = 0; i < m_mesh.meshes.size(); i++)
 		{
 			// send each mesh's material index to the shaders right before calling draw
 			vkCmdPushConstants(_commandBuffer, _pipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(uint32_t), &m_mesh.meshes[i].materialIndex);
-			
+
 			if (m_indexBuffer != nullptr)
 				vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);//m_mesh.meshes[0].drawInfo.indexOffset, 0, 0);
 			else

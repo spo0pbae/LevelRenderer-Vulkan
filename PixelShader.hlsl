@@ -2,16 +2,16 @@
 #define MAX_SUBMESH_PER_DRAW 1024
 struct OBJ_ATTRIBUTES
 {
-	float3    Kd;										// diffuse reflectivity
-	float	  d;										// dissolve (transparency) 
-	float3    Ks;										// specular reflectivity
-	float     Ns;										// specular exponent
-	float3    Ka;										// ambient reflectivity
-	float     sharpness;								// local reflection map sharpness
-	float3    Tf;										// transmission filter
-	float     Ni;										// optical density (index of refraction)
-	float3    Ke;										// emissive reflectivity
-	uint	  illum;									// illumination model
+	float3	Kd;											// diffuse reflectivity
+	float	d;											// dissolve (transparency) 
+	float3  Ks;											// specular reflectivity
+	float   Ns;											// specular exponent
+	float3  Ka;											// ambient reflectivity
+	float   sharpness;									// local reflection map sharpness
+	float3  Tf;											// transmission filter
+	float   Ni;											// optical density (index of refraction)
+	float3  Ke;											// emissive reflectivity
+	uint	illum;										// illumination model
 };
 	
 struct SHADER_MODEL_DATA								// Mirror SHADER_MODEL_DATA from C++
@@ -45,7 +45,7 @@ struct V_OUT
 float4 main(V_OUT input) : SV_TARGET 
 {	
 	// DIFFUSE
-	// For lambertian, we need the dot product between the surface norm and direction to light(aka -lightdir), as well as the light ratio
+	// For lambertian, we need the dot product between the surface norm and direction to light(-lightDir), as well as the light ratio
 	float4 diffuseColor = float4(SceneData[0].materials[meshID].Kd.xyz, 1.0f);						// diffuse color if the material (surfaceColor, fragColor)
 	float3 surfaceNorm	= normalize(input.norm);													// re-normalize input norm
     float lightRatio	= saturate(dot(surfaceNorm, -SceneData[0].sunDirection.xyz));				// Get light ratio (direct light)
@@ -67,7 +67,7 @@ float4 main(V_OUT input) : SV_TARGET
     float3 intensity	= max(pow(saturate(dot(surfaceNorm, halfVec)), specPow), 0.0f);
    
 	// Combine it all: light color * shininess * intensity
-    float4 specular = float4(SceneData[0].sunColor, 1) * gloss * float4(intensity, 1);
+    float4 specular		= float4(SceneData[0].sunColor, 1) * gloss * float4(intensity, 1);
 	
     return ambientLight + specular;
 }

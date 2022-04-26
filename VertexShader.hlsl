@@ -4,16 +4,16 @@
 #define MAX_SUBMESH_PER_DRAW 1024
 struct OBJ_ATTRIBUTES
 {
-    float3 Kd;                                          // diffuse reflectivity
-    float d;                                            // dissolve (transparency) 
-    float3 Ks;                                          // specular reflectivity
-    float Ns;                                           // specular exponent
-    float3 Ka;                                          // ambient reflectivity
-    float sharpness;                                    // local reflection map sharpness
-    float3 Tf;                                          // transmission filter
-    float Ni;                                           // optical density (index of refraction)
-    float3 Ke;                                          // emissive reflectivity
-    uint illum;                                         // illumination model
+    float3  Kd;                                         // diffuse reflectivity
+    float   d;                                          // dissolve (transparency) 
+    float3  Ks;                                         // specular reflectivity
+    float   Ns;                                         // specular exponent
+    float3  Ka;                                         // ambient reflectivity
+    float   sharpness;                                  // local reflection map sharpness
+    float3  Tf;                                         // transmission filter
+    float   Ni;                                         // optical density (index of refraction)
+    float3  Ke;                                         // emissive reflectivity
+    uint    illum;                                      // illumination model
 };
 	
 struct SHADER_MODEL_DATA							    // Mirror SHADER_MODEL_DATA from C++
