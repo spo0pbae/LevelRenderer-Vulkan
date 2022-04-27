@@ -34,7 +34,7 @@ int main()
 	{
 		win.SetWindowName("Sierra Negron -- Level Renderer -- Vulkan");
 		VkClearValue clrAndDepth[2];
-		clrAndDepth[0].color = { {0.55f, 0.55f, 0.65f, 1.0f} };
+		clrAndDepth[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 		clrAndDepth[1].depthStencil = { 1.0f, 0u };
 
 		// Handle resize event
@@ -73,6 +73,14 @@ int main()
 					// Change level
 					if (GetAsyncKeyState(VK_F1))
 						renderer.ChangeLevel();
+
+					// Pause music
+					if (GetAsyncKeyState(VK_F2))
+						renderer.PauseMusic();
+
+					// Unpause music
+					if (GetAsyncKeyState(VK_F3))
+						renderer.ResumeMusic();
 				}
 			}
 		}

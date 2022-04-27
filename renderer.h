@@ -576,6 +576,16 @@ public:
 		m_mxMathProxy.InverseF(viewCopy, m_view);
 	}
 
+	void PauseMusic()
+	{
+		m_musicProxy.Pause();
+	}
+
+	void ResumeMusic()
+	{
+		m_musicProxy.Resume();
+	}
+
 	// Runs the parser and populates a vector of Models
 	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
 	{
