@@ -70,7 +70,7 @@ public:
 		m_inputProxy.Create(win);
 		m_controllerProxy.Create();
 		m_audio.Create();
-		m_sound.Create(soundPath, m_audio, 0.005f);
+		m_sound.Create(soundPath, m_audio, 0.005f);		// its very loud!
 		m_musicProxy.Create(musicPath, m_audio, 0.005f);
 
 		/* INITIALIZE SCENE DATA */
@@ -96,7 +96,7 @@ public:
 		vlk.GetRenderPass((void**)&renderPass);
 		InitPipeline(m_width, m_height, renderPass);
 
-		// Play background music
+		// Play looping background music
 		m_musicProxy.Play(true);
 
 		/***************** CLEANUP / SHUTDOWN ********************/
@@ -576,16 +576,6 @@ public:
 		m_mxMathProxy.InverseF(viewCopy, m_view);
 	}
 
-	void PauseMusic()
-	{
-		m_musicProxy.Pause();
-	}
-
-	void ResumeMusic()
-	{
-		m_musicProxy.Resume();
-	}
-
 	// Runs the parser and populates a vector of Models
 	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
 	{
@@ -597,6 +587,10 @@ public:
 			_models.push_back(temp);
 		}
 	}
+
+	void PauseMusic() { m_musicProxy.Pause(); }
+
+	void ResumeMusic() { m_musicProxy.Resume(); }
 
 	std::string ShaderToString(const char* _shaderFilePath)
 	{
