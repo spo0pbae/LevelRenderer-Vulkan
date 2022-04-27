@@ -9,7 +9,8 @@ class Renderer
 	{
 		std::vector<H2B::Parser> modelData;				// Every mesh in the level
 		std::vector<std::string> modelNames;			// Names of each model
-		std::vector<GW::MATH::GMATRIXF> modelMatrices;  // model world matrices 
+		std::vector<GW::MATH::GMATRIXF> modelMatrices;  // model world matrices
+		GW::MATH::GVECTORF pLightPos;					// point light matrix
 	};
 	GameLevelData					m_levelData = {};
 
@@ -22,8 +23,8 @@ class Renderer
 	GW::MATH::GMatrix				m_mxMathProxy;
 	GW::MATH::GVector				m_vecMathProxy;
 	GW::AUDIO::GMusic				m_musicProxy;
-	GW::AUDIO::GAudio				m_audio;
 	GW::AUDIO::GSound				m_sound;
+	GW::AUDIO::GAudio				m_audio;
 
 	// Device and pipeline objects
 	VkDevice						m_device			= nullptr;
@@ -45,7 +46,7 @@ class Renderer
 	XTime							m_timer;
 
 	// Flag for toggling level
-	bool m_levelFlag = false;
+	bool m_levelFlag				= false;
 
 	float m_fov, m_ar				= 0.0f;
 	unsigned int m_width, m_height	= 0;
@@ -70,7 +71,7 @@ public:
 		m_controllerProxy.Create();
 		m_audio.Create();
 		m_sound.Create(soundPath, m_audio, 0.005f);
-		m_musicProxy.Create(musicPath, m_audio, 0.005f); // it's very loud!!
+		m_musicProxy.Create(musicPath, m_audio, 0.005f);
 
 		/* INITIALIZE SCENE DATA */
 		InitSceneData(vlk);
@@ -95,7 +96,7 @@ public:
 		vlk.GetRenderPass((void**)&renderPass);
 		InitPipeline(m_width, m_height, renderPass);
 
-		// Play music
+		// Play background music
 		m_musicProxy.Play(true);
 
 		/***************** CLEANUP / SHUTDOWN ********************/
@@ -136,6 +137,7 @@ public:
 		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// direction wants w = 0
 		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.55f, 0.0f,  1.0f };					// orange tint
 		GW::MATH::GVECTORF lightAmbient { 0.25f,0.25f, 0.35f, 1.0f };
+		GW::MATH::GVECTORF pointColor	{ 1.0f, 0.5f,  0.1f,  1.0f };
 
 		// Normalize light direction before sending to shaders
 		m_vecMathProxy.NormalizeF(lightDir, lightDir);
@@ -148,7 +150,7 @@ public:
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
 			// set each model's world matrix and scene data
-			m_models[i].m_sceneData.matricies[0]	= m_levelData.modelMatrices[i];
+			m_models[i].m_sceneData.matricies[0] = m_levelData.modelMatrices[i];
 
 			m_models[i].m_sceneData.sunDirection	= lightDir;
 			m_models[i].m_sceneData.sunColor		= lightClr;
@@ -156,6 +158,12 @@ public:
 			m_models[i].m_sceneData.camPos			= camPos;
 			m_models[i].m_sceneData.viewMatrix		= m_view;
 			m_models[i].m_sceneData.projMatrix		= m_projection;
+
+			if (level == "../GameLevel2.txt")
+			{
+				m_models[i].m_sceneData.pointPos	= m_levelData.pLightPos;    
+				m_models[i].m_sceneData.pointCol	= pointColor;
+			}
 		}
 
 		// for each model
@@ -292,7 +300,7 @@ public:
 		rasterization_create_info.rasterizerDiscardEnable	= VK_FALSE;
 		rasterization_create_info.polygonMode				= VK_POLYGON_MODE_FILL;
 		rasterization_create_info.lineWidth					= 1.0f;
-		rasterization_create_info.cullMode					= VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;		// triangle facing direction
+		rasterization_create_info.cullMode					= VK_CULL_MODE_BACK_BIT;
 		rasterization_create_info.frontFace					= VK_FRONT_FACE_CLOCKWISE;
 		rasterization_create_info.depthClampEnable			= VK_FALSE;
 		rasterization_create_info.depthBiasEnable			= VK_FALSE;
@@ -363,7 +371,7 @@ public:
 		pushConstant.size									= sizeof(uint32_t); // needs to be at least 128 bytes
 		pushConstant.stageFlags								= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		/* Descriptor pipeline layout */
+		// Descriptor pipeline layout
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
 		pipeline_layout_create_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_create_info.setLayoutCount			= 1;
@@ -568,6 +576,18 @@ public:
 		m_mxMathProxy.InverseF(viewCopy, m_view);
 	}
 
+	// Runs the parser and populates a vector of Models
+	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
+	{
+		ParseH2B(m_levelData, _gameLevelPath);
+		for (int i = 0; i < m_levelData.modelData.size(); i++)
+		{
+			Model temp;
+			temp.m_mesh = m_levelData.modelData[i];
+			_models.push_back(temp);
+		}
+	}
+
 	std::string ShaderToString(const char* _shaderFilePath)
 	{
 		std::string output;
@@ -584,27 +604,16 @@ public:
 		return output;
 	}
 
-	// Runs the parser and populates a vector of Models
-	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
-	{
-		ParseH2B(m_levelData, _gameLevelPath);
-		for (int i = 0; i < m_levelData.modelData.size(); i++)
-		{
-			Model temp;
-			temp.m_mesh = m_levelData.modelData[i];
-			_models.push_back(temp);
-		}
-	}
-
 private:
 	void ParseH2B(GameLevelData& _data, std::string& _filePath)
 	{
 		H2B::Parser p;
-		std::string line = " ";
-		std::string prevName = " ";
-		std::string ignore[2] = { "<Matrix" , "4x4" };
-		GW::MATH::GMATRIXF tempMatrix = { 0 };
-		int ndx = 0;
+		std::string line				= " ";
+		std::string prevName			= " ";
+		std::string ignore[2]			= { "<Matrix" , "4x4" };
+		GW::MATH::GMATRIXF tempMatrix	= { 0 };
+		//GW::MATH::GVECTORF tempVec		= { 0 };
+		int ndx							= 0;
 		std::vector<std::string> tempNames;
 
 		std::ifstream file{ _filePath, std::ios::in };		// Open file
@@ -640,7 +649,7 @@ private:
 					char* getfloat;
 
 					std::getline(file, line);				// Get the 'i'th row of the matrix
-					strcpy(temp, line.c_str());				// convert to char*
+					strcpy(temp, line.c_str());				// convert line to char*
 					getfloat = strtok(temp, " (,)");		// Get first token in the row
 
 					while (getfloat != NULL)				// walk through the rest of the tokens in the row
@@ -663,6 +672,39 @@ private:
 					} // Walk through Token
 				} // For every row in the Matrix
 			} // if "MESH"
+
+			if (line == "LIGHT")							// if you found light
+			{
+				std::getline(file, line);					// Skip name line to get to the matrix
+				for (int i = 0; i < 4; i++)					// loop through each row
+				{
+					char temp[250];
+					char* getfloat;
+
+					std::getline(file, line);				// Get the 'i'th row of the matrix
+					strcpy(temp, line.c_str());				// convert line to char*
+					getfloat = strtok(temp, " (,)");		// Get first token in the row
+
+					while (getfloat != NULL)				// walk through the rest of the tokens in the row
+					{
+						if (getfloat != ignore[0] && getfloat != ignore[1])
+						{
+							float stof = atof(getfloat);
+							tempMatrix.data[ndx] = stof;
+							ndx++; // only increment ndx if we put something in it
+						}
+						getfloat = strtok(NULL, " (,)>");	// Get next token
+
+						// Once the last element is filled, push into vector and reset
+						if (ndx == 16)
+						{
+							m_levelData.pLightPos = tempMatrix.row4;
+							tempMatrix = { 0 };
+							ndx = 0;
+						}
+					} // Walk through Token
+				} // For every row in the Matrix
+			} // if "LIGHT"
 		} // !eof
 
 		// store actual names in mesh vector

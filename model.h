@@ -24,12 +24,12 @@ private:
 	struct SHADER_MODEL_DATA
 	{
 		// Globally shared model data
-		GW::MATH::GVECTORF		sunDirection, sunColor, sunAmbient, camPos;			// light info
-		GW::MATH::GMATRIXF		viewMatrix, projMatrix;								// view info
+		GW::MATH::GVECTORF		sunDirection, sunColor, sunAmbient, camPos, pointPos, pointCol;	// light info
+		GW::MATH::GMATRIXF		viewMatrix, projMatrix;											// view info
 
 		// Per sub-mesh transformation and material data
-		GW::MATH::GMATRIXF		matricies[MAX_SUBMESH_PER_DRAW]; // world space transforms
-		H2B::ATTRIBUTES			materials[MAX_SUBMESH_PER_DRAW]; // color/texture of surface
+		GW::MATH::GMATRIXF		matricies[MAX_SUBMESH_PER_DRAW];								// world space transforms
+		H2B::ATTRIBUTES			materials[MAX_SUBMESH_PER_DRAW];								// color/texture of surface
 	};
 	SHADER_MODEL_DATA			m_sceneData			= { 0 };
 
@@ -189,10 +189,14 @@ public:
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(uint32_t), &m_mesh.meshes[i].materialIndex);
 
-			if (m_indexBuffer != nullptr)
-				vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);//m_mesh.meshes[0].drawInfo.indexOffset, 0, 0);
-			else
-				vkCmdDraw(_commandBuffer, m_mesh.vertexCount, 1, 0, 0);
+			// Draw each submesh by their indexCounts and offsets
+			//vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[i].drawInfo.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);	// SHOULD draw split by submeshes
+			vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);															// draws whole mesh
+					
+			//if (m_indexBuffer != nullptr)
+				//vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[i].drawInfo.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);
+			//else
+				//vkCmdDraw(_commandBuffer, m_mesh.vertexCount, 1, 0, 0);
 		}
 	}
 

@@ -18,7 +18,8 @@ struct OBJ_ATTRIBUTES
 	
 struct SHADER_MODEL_DATA							    // Mirror SHADER_MODEL_DATA from C++
 {
-    float3 sunDirection, sunColor, sunAmbient, camPos;  // light color and direction
+    float3 sunDirection, sunColor, sunAmbient, camPos,  // lighting info
+            pointPos, pointCol;
     matrix viewMatrix, projMatrix;                      // View and projection matrices
 
     matrix matricies[MAX_SUBMESH_PER_DRAW];             // world space transforms

@@ -16,9 +16,9 @@ struct OBJ_ATTRIBUTES
 	
 struct SHADER_MODEL_DATA								// Mirror SHADER_MODEL_DATA from C++
 {
-	float3 sunDirection, sunColor, sunAmbient, camPos;	// light info
+    float3 sunDirection, sunColor, sunAmbient, camPos,  // Light info
+			pointPos, pointCol;									
 	matrix viewMatrix, projMatrix;						// view info
-
 	matrix matricies[MAX_SUBMESH_PER_DRAW];				// world space transforms
 	OBJ_ATTRIBUTES materials[MAX_SUBMESH_PER_DRAW];		// color/texture of surface
 };
@@ -69,5 +69,17 @@ float4 main(V_OUT input) : SV_TARGET
 	// Combine it all: light color * shininess * intensity
     float4 specular		= float4(SceneData[0].sunColor, 1) * gloss * float4(intensity, 1);
 	
-    return ambientLight + specular;
+	// Point light
+    float4 pLight = (0);
+    float pLightRatio = 0.0f;
+    float3 lightDir;
+	
+    if (SceneData[0].pointPos.y != 0)
+    {
+        float3 lightDir = normalize(SceneData[0].pointPos - input.posW);
+        pLightRatio = saturate(dot(lightDir, surfaceNorm));
+        pLight = float4(pLightRatio * SceneData[0].pointCol.xyz * diffuseColor.xyz, 1);
+    }     
+	//else
+    return ambientLight + specular; //+ pLight;
 }
