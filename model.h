@@ -181,7 +181,6 @@ public:
 
 	void Draw(VkPipelineLayout &_pipelineLayout, VkCommandBuffer &_commandBuffer)
 	{
-		int prev = 0;
 		// for each submesh
 		for (int i = 0; i < m_mesh.meshes.size(); i++)
 		{
@@ -190,14 +189,8 @@ public:
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(uint32_t), &m_mesh.meshes[i].materialIndex);
 		
-			// Draw each submesh by their indexCounts and offsets
-			for (int j = 0; j < m_mesh.meshes.size(); ++j)
-			{
-				vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[j].drawInfo.indexCount, 1, m_mesh.meshes[j].drawInfo.indexOffset, 0, 0);	// SHOULD draw split by submeshes
-				//prev++;
-			}	
-				
-			//vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);															// draws whole mesh
+			// Draw each submesh by their indexCounts and offsets (SHOULD draw split by submeshes)
+			vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[i].drawInfo.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);	
 		}
 	}
 

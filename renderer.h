@@ -149,7 +149,7 @@ public:
 
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
-			// set each model's world matrix and scene data
+			// Set each model's world matrix and scene data
 			m_models[i].m_sceneData.matricies[0] = m_levelData.modelMatrices[i];
 
 			m_models[i].m_sceneData.sunDirection	= lightDir;
@@ -159,6 +159,7 @@ public:
 			m_models[i].m_sceneData.viewMatrix		= m_view;
 			m_models[i].m_sceneData.projMatrix		= m_projection;
 
+			// Point light info for scene 2
 			if (level == "../GameLevel2.txt")
 			{
 				m_models[i].m_sceneData.pointPos	= m_levelData.pLightPos;    
@@ -169,7 +170,7 @@ public:
 		// for each model
 		for (auto &m : m_models)
 		{
-			// For each materialin the mesh, set the scene data's materials
+			// For each material in the mesh, set the scene data's materials
 			for (int i = 0; i < m.m_mesh.materialCount; ++i)
 				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
 		}
@@ -239,7 +240,6 @@ public:
 
 	void InitPipeline(unsigned int _width, unsigned int _height, VkRenderPass &_renderPass)
 	{
-
 		// Stage Info for vertex/fragment shaders
 		VkPipelineShaderStageCreateInfo stage_create_info[2] = {};
 		stage_create_info[0].sType							= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -510,15 +510,19 @@ public:
 
 		// Handle WASD movement
 		GW::MATH::GVECTORF translateMx;
-		float perFrameSpeed		= camSpeed * delta;
-		float xChange, zChange	= 0.0f;
+		float perFrameSpeed			= camSpeed * delta;
+		float xChange				= 0.0f;
+		float zChange				= 0.0f;
 
 		// wasd strafing keystates
-		float wPressed, aPressed, 
-			sPressed, dPressed  = 0.0f;
+		float wPressed				= 0.0f;
+		float aPressed				= 0.0f;
+		float sPressed 				= 0.0f;
+		float dPressed				= 0.0f;
 
 		// left stick movement states
-		float lStickX, lStickY	= 0.0f;
+		float lStickX				= 0.0f;
+		float lStickY				= 0.0f;
 
 		// WASD
 		m_inputProxy.GetState(G_KEY_W, wPressed);
@@ -546,12 +550,14 @@ public:
 
 		float pi					= 3.14159f;
 		float thumbSpeed			= pi * delta;
-		float totalPitch, totalYaw	= 0.0f;
+		float totalPitch			= 0.0f;
+		float totalYaw				= 0.0f;
 
 		// Right stick states
-		float rStickX, rStickY		= 0.0f;
+		float rStickX				= 0.0f;
+		float rStickY				= 0.0f;
 
-		// right controller stick
+		// Right controller stick
 		m_controllerProxy.GetState(0, G_RX_AXIS, rStickX);
 		m_controllerProxy.GetState(0, G_RY_AXIS, rStickY);
 
@@ -565,7 +571,8 @@ public:
 			totalPitch = m_fov * mY / screenHeight + rStickY * -thumbSpeed; // -thumbspeed prevents inverted tilt
 			m_mxMathProxy.RotateXLocalF(viewCopy, totalPitch, viewCopy);
 		}
-		//  yaw rotation
+
+		//  Yaw rotation
 		if (res == GW::GReturn::SUCCESS && res != GW::GReturn::REDUNDANT || rStickX)
 		{
 			totalYaw = m_fov * m_ar * mX / screenWidth + rStickX * thumbSpeed;
@@ -622,7 +629,7 @@ private:
 		std::ifstream file{ _filePath, std::ios::in };		// Open file
 
 		if (!file.is_open())
-			std::cout << "Could not open file!\n";
+			std::cout << "ParseH2B: Could not open file!\n" << "Path: " << _filePath << std::endl;
 		else
 		{
 			// GET NAMES
