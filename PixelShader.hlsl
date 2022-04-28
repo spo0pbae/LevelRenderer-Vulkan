@@ -55,7 +55,7 @@ float4 main(V_OUT input) : SV_TARGET
 	
 	// AMBIENT LIGHT (indirect/bounced light)
 	float4 ambientTerm	= float4(SceneData[0].sunAmbient.xyz, 1);
-    float4 ambientLight = saturate(lightRatio * float4(SceneData[0].sunColor.xyz, 1) + ambientTerm) * diffuseColor; // final output of diffuse with ambient lighting
+    float4 ambientLight = saturate(lightRatio * float4(SceneData[0].sunColor.xyz, 1) + ambientTerm) * diffuseColor; // diffuse with ambient lighting
 	
 	// SPECULAR
 	float3 viewDir		= normalize(SceneData[0].camPos - input.posW);								// eye (view) direction vector
@@ -72,14 +72,15 @@ float4 main(V_OUT input) : SV_TARGET
 	// Point light
     float4 pLight = (0);
     float pLightRatio = 0.0f;
-    float3 lightDir;
+    float pIntensity = 25.0f;
 	
     if (SceneData[0].pointPos.y != 0)
     {
-        float3 lightDir = normalize(SceneData[0].pointPos - input.posW);
-        pLightRatio = saturate(dot(lightDir, surfaceNorm));
-        pLight = float4(pLightRatio * SceneData[0].pointCol.xyz * diffuseColor.xyz, 1);
+        float pLightRadius	= 5.0f;
+        float3 pLightDir	= normalize(SceneData[0].pointPos - input.posW);									// calculate direction to light source from surface
+        pLightRatio			= saturate(dot(pLightDir, surfaceNorm));
+        float atten			= 1 - saturate(length(SceneData[0].pointPos - input.posW) / pLightRadius);			// multiply this by amount of light reaching the surface
+        pLight = float4((atten * pIntensity * pLightRatio) * SceneData[0].pointCol.xyz * diffuseColor.xyz, 1);	// lightRatio * lightColor * surfaceColor
     }     
-	//else
-    return ambientLight + specular; //+ pLight;
+    return ambientLight + specular + pLight;
 }

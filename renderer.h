@@ -289,7 +289,7 @@ public:
 		VkRect2D scissor = { {0, 0}, {_width, _height} };
 		VkPipelineViewportStateCreateInfo viewport_create_info = {};
 		viewport_create_info.sType							= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewport_create_info.viewportCount					= 1;
+		viewport_create_info.viewportCount					= 1;			// 2 viewports if we want to split screen
 		viewport_create_info.pViewports						= &viewport;
 		viewport_create_info.scissorCount					= 1;
 		viewport_create_info.pScissors						= &scissor;
@@ -616,7 +616,6 @@ private:
 		std::string prevName			= " ";
 		std::string ignore[2]			= { "<Matrix" , "4x4" };
 		GW::MATH::GMATRIXF tempMatrix	= { 0 };
-		//GW::MATH::GVECTORF tempVec		= { 0 };
 		int ndx							= 0;
 		std::vector<std::string> tempNames;
 
