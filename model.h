@@ -179,7 +179,7 @@ public:
 		GvkHelper::write_to_buffer(_device, m_storageData[_currentBuffer], &m_sceneData, sizeof(Model::SHADER_MODEL_DATA));
 	}
 
-	void Draw(VkPipelineLayout& _pipelineLayout, VkCommandBuffer& _commandBuffer)
+	void Draw(VkPipelineLayout &_pipelineLayout, VkCommandBuffer &_commandBuffer)
 	{
 		// for each submesh
 		for (int i = 0; i < m_mesh.meshes.size(); ++i)
@@ -190,8 +190,10 @@ public:
 				0, sizeof(uint32_t), &m_mesh.meshes[i].materialIndex);
 
 			// Draw each submesh by their indexCounts and offsets
-			//vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[i].drawInfo.indexCount, 1, m_mesh.meshes[i].drawInfo.indexOffset, 0, 0);	// SHOULD draw split by submeshes
-			vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);															// draws whole mesh
+			for (int j = 0; j < m_mesh.meshes.size(); ++j) 
+					vkCmdDrawIndexed(_commandBuffer, m_mesh.meshes[j].drawInfo.indexCount, 1, m_mesh.meshes[j].drawInfo.indexOffset, 0, 0);	// SHOULD draw split by submeshes
+				
+			//vkCmdDrawIndexed(_commandBuffer, m_mesh.indexCount, 1, 0, 0, 0);															// draws whole mesh
 		}
 	}
 

@@ -167,7 +167,7 @@ public:
 		}
 
 		// for each model
-		for (auto& m : m_models)
+		for (auto &m : m_models)
 		{
 			// For each material, set the scene data's materials
 			for (int i = 0; i < m.m_mesh.materialCount; ++i)
@@ -451,8 +451,10 @@ public:
 		// Change the level flag
 		m_levelFlag = (false) ? m_levelFlag == true : m_levelFlag == false;
 			
-		// Clean up and clear the scene/model data
-		CleanUp();
+		// Finish curren't level's queue operations
+		vkDeviceWaitIdle(m_device);
+
+		// Clear and re-initialize model data
 		m_levelData.modelData.clear();
 		m_levelData.modelMatrices.clear();
 		m_levelData.modelNames.clear();
@@ -469,14 +471,6 @@ public:
 		unsigned int maxFrames = 0;
 		vlk.GetSwapchainImageCount(maxFrames);
 		InitGeometry(physicalDevice, maxFrames);
-
-		// Re-initialize shaders
-		InitShaders();
-
-		// Re-initialize pipeline
-		VkRenderPass renderPass;
-		vlk.GetRenderPass((void**)&renderPass);
-		InitPipeline(m_width, m_height, renderPass);
 	}
 
 	void UpdateCamera()
