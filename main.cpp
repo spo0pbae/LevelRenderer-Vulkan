@@ -35,7 +35,7 @@ int main()
 	{
 		win.SetWindowName("Sierra Negron -- Level Renderer -- Vulkan");
 		VkClearValue clrAndDepth[2];
-		clrAndDepth[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clrAndDepth[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clrAndDepth[1].depthStencil = { 1.0f, 0u };
 
 		// Handle resize event
