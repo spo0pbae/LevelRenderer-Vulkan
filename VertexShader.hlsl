@@ -34,8 +34,8 @@ StructuredBuffer<SHADER_MODEL_DATA> SceneData;
 cbuffer MESH_INDEX
 {
 	// now the bytes that were uploaded by the push constant command should overwrite this buffer
-	uint meshID; // should always be 0
-    // uint materialID to be added in the future
+	uint meshID; // should always be 0 (for use in the vertex shader)
+    // uint materialID to be added in the future (for use in the pixel shader)
 };
  
 // Adjust vertex shader to take in Position, UV, and Normal, and tweak output in main()

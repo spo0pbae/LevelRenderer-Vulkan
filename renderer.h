@@ -10,7 +10,7 @@ class Renderer
 		std::vector<H2B::Parser> modelData;				// Every mesh in the level
 		std::vector<std::string> modelNames;			// Names of each model
 		std::vector<GW::MATH::GMATRIXF> modelMatrices;  // model world matrices
-		GW::MATH::GVECTORF pLightPos;					// point light matrix
+		std::vector<GW::MATH::GVECTORF> pLightPos;		// point light matrix
 	};
 	GameLevelData					m_levelData = {};
 
@@ -162,7 +162,7 @@ public:
 			// Point light info for scene 2
 			if (level == "../GameLevel2.txt")
 			{
-				m_models[i].m_sceneData.pointPos	= m_levelData.pLightPos;    
+				m_models[i].m_sceneData.pointPos	= m_levelData.pLightPos[0];    
 				m_models[i].m_sceneData.pointCol	= pointColor;
 			}
 		}
@@ -492,8 +492,10 @@ public:
 		const float camSpeed				= 2.0f;				// Represents how far we want the camera to be able to move over one second
 
 		// Vertical input states
-		float spacePressed, lshiftPressed	= 0.0f;				// keyboard
-		float rtPressed, ltPressed			= 0.0f;				// controller
+		float spacePressed					= 0.0f;
+		float lshiftPressed					= 0.0f;				// keyboard
+		float rtPressed						= 0.0f;
+		float ltPressed						= 0.0f;				// controller
 
 		// Get vertical input states
 		m_inputProxy.GetState(G_KEY_SPACE, spacePressed);
@@ -705,10 +707,10 @@ private:
 						}
 						getfloat = strtok(NULL, " (,)>");	// Get next token
 
-						// Once the last element is filled, push into vector and reset
+						// Once the last element is filled, push the last row into vector and reset
 						if (ndx == 16)
 						{
-							m_levelData.pLightPos = tempMatrix.row4;
+							_data.pLightPos.push_back(tempMatrix.row4);
 							tempMatrix = { 0 };
 							ndx = 0;
 						}
