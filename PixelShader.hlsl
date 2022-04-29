@@ -17,10 +17,13 @@ struct OBJ_ATTRIBUTES
 struct SHADER_MODEL_DATA								// Mirror SHADER_MODEL_DATA from C++
 {
     float3 sunDirection, sunColor, sunAmbient, camPos,  // Light info
-			pointPos, pointCol;									
+			pointCol;									
 	matrix viewMatrix, projMatrix;						// view info
+	
 	matrix matricies[MAX_SUBMESH_PER_DRAW];				// world space transforms
 	OBJ_ATTRIBUTES materials[MAX_SUBMESH_PER_DRAW];		// color/texture of surface
+    float4 pLightPos[16];								// positions for point lights in the scene
+    int lightCount;
 };
 
 // Add a structured buffer for scene data
@@ -70,16 +73,25 @@ float4 main(V_OUT input) : SV_TARGET
     float4 specular		= float4(SceneData[0].sunColor, 1) * gloss * float4(intensity, 1);
 	
 	// Point light
-    float4 pLight = (0);
-    if (SceneData[0].pointPos.y != 0)
-    {
-        float pLightRadius	= 5.0f;
-        float pIntensity	= 25.0f;
-        float3 pLightDir	= normalize(SceneData[0].pointPos - input.posW);									// calculate direction to light source from surface
-        float pLightRatio	= saturate(dot(pLightDir, surfaceNorm));
-        float atten			= 1 - saturate(length(SceneData[0].pointPos - input.posW) / pLightRadius);			// multiply this by amount of light reaching the surface
-        pLight = float4((atten * pIntensity * pLightRatio) * SceneData[0].pointCol.xyz * diffuseColor.xyz, 1);	// lightRatio * lightColor * surfaceColor
-    } 
+    float4 pLight[];
+    float pLightRadius;
+    float pIntensity;
+    float3 pLightDir;
+    float pLightRatio;
+    float atten;
 	
-    return ambientLight + specular + pLight;
+    float4 pLightSum = (0); // all point lights
+	
+    for (int i = 0; i < SceneData[0].lightCount; i++)
+    {
+		pLightRadius	= 5.0f;
+		pIntensity		= 15.0f;
+		pLightDir		= normalize(SceneData[0].pLightPos[i].xyz - input.posW); // calculate direction to light source from surface
+		pLightRatio		= saturate(dot(pLightDir, surfaceNorm));
+		atten			= 1 - saturate(length(SceneData[0].pLightPos[i].xyz - input.posW) / pLightRadius); // multiply this by amount of light reaching the surface
+        pLight[i]		= float4((atten * pIntensity * pLightRatio) * SceneData[0].pointCol.xyz * diffuseColor.xyz, 1); // lightRatio * lightColor * surfaceColor
+		
+        pLightSum += pLight[i];
+    }
+        return ambientLight + specular + pLightSum;
 }

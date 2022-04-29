@@ -24,12 +24,14 @@ private:
 	struct SHADER_MODEL_DATA
 	{
 		// Globally shared model data
-		GW::MATH::GVECTORF		sunDirection, sunColor, sunAmbient, camPos, pointPos, pointCol;	// light info
+		GW::MATH::GVECTORF		sunDirection, sunColor, sunAmbient, camPos, pointCol;			// light info
 		GW::MATH::GMATRIXF		viewMatrix, projMatrix;											// view info
 
 		// Per sub-mesh transformation and material data
 		GW::MATH::GMATRIXF		matricies[MAX_SUBMESH_PER_DRAW];								// world space transforms
 		H2B::ATTRIBUTES			materials[MAX_SUBMESH_PER_DRAW];								// color/texture of surface
+		GW::MATH::GVECTORF      pLightPos[16];
+		int lightCount;
 	};
 	SHADER_MODEL_DATA			m_sceneData			= { 0 };
 

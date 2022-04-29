@@ -10,7 +10,7 @@ class Renderer
 		std::vector<H2B::Parser> modelData;				// Every mesh in the level
 		std::vector<std::string> modelNames;			// Names of each model
 		std::vector<GW::MATH::GMATRIXF> modelMatrices;  // model world matrices
-		std::vector<GW::MATH::GVECTORF> pLightPos;		// point light matrix
+		std::vector<GW::MATH::GVECTORF> pLightPos;		// point light positions in the scene
 	};
 	GameLevelData					m_levelData = {};
 
@@ -137,7 +137,8 @@ public:
 		GW::MATH::GVECTORF lightDir		{-1.0f,-1.0f,  2.0f,  0.0f };					// direction wants w = 0
 		GW::MATH::GVECTORF lightClr		{ 1.0f, 0.55f, 0.0f,  1.0f };					// orange tint
 		GW::MATH::GVECTORF lightAmbient { 0.25f,0.25f, 0.35f, 1.0f };
-		GW::MATH::GVECTORF pointColor	{ 1.0f, 0.5f,  0.1f,  1.0f };
+		GW::MATH::GVECTORF pointColor1  { 1.0f, 0.23f, 0.033f,1.0f };
+		GW::MATH::GVECTORF pointColor2	{ 1.0f, 0.5f,  0.1f,  1.0f };
 
 		// Normalize light direction before sending to shaders
 		m_vecMathProxy.NormalizeF(lightDir, lightDir);
@@ -150,20 +151,25 @@ public:
 		for (int i = 0; i < m_levelData.modelData.size(); i++)
 		{
 			// Set each model's world matrix and scene data
-			m_models[i].m_sceneData.matricies[0] = m_levelData.modelMatrices[i];
+			m_models[i].m_sceneData.matricies[0]		= m_levelData.modelMatrices[i];
 
-			m_models[i].m_sceneData.sunDirection	= lightDir;
-			m_models[i].m_sceneData.sunColor		= lightClr;
-			m_models[i].m_sceneData.sunAmbient		= lightAmbient;
-			m_models[i].m_sceneData.camPos			= camPos;
-			m_models[i].m_sceneData.viewMatrix		= m_view;
-			m_models[i].m_sceneData.projMatrix		= m_projection;
+			m_models[i].m_sceneData.sunDirection		= lightDir;
+			m_models[i].m_sceneData.sunColor			= lightClr;
+			m_models[i].m_sceneData.sunAmbient			= lightAmbient;
+			m_models[i].m_sceneData.camPos				= camPos;
+			m_models[i].m_sceneData.viewMatrix			= m_view;
+			m_models[i].m_sceneData.projMatrix			= m_projection;
+			m_models[i].m_sceneData.lightCount			= m_levelData.pLightPos.size(); // set number of lights to size of light vector
 
-			// Point light info for scene 2
-			if (level == "../GameLevel2.txt")
+			// Point light info
+			for (int j = 0; j < m_levelData.pLightPos.size(); j++)
 			{
-				m_models[i].m_sceneData.pointPos	= m_levelData.pLightPos[0];    
-				m_models[i].m_sceneData.pointCol	= pointColor;
+				m_models[i].m_sceneData.pLightPos[j]	= m_levelData.pLightPos[j];  
+
+				if (level == "../GameLevel2.txt")
+					m_models[i].m_sceneData.pointCol	= pointColor2;
+				else 
+					m_models[i].m_sceneData.pointCol	= pointColor1;
 			}
 		}
 
