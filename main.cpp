@@ -28,7 +28,6 @@ int main()
 	GEventResponder msgs;
 	GVulkanSurface vulkan;
 	GW::INPUT::GInput input;
-	bool isKeyDown = false;
 
 	if (+win.Create(0, 0, 800, 600, GWindowStyle::WINDOWEDBORDERED))
 	{

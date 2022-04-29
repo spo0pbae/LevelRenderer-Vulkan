@@ -166,10 +166,10 @@ public:
 			{
 				m_models[i].m_sceneData.pLightPos[j]	= m_levelData.pLightPos[j];  
 
-				if (level == "../GameLevel2.txt")
-					m_models[i].m_sceneData.pointCol	= pointColor2;
-				else 
+				if (level == "../GameLevel.txt")
 					m_models[i].m_sceneData.pointCol	= pointColor1;
+				else 
+					m_models[i].m_sceneData.pointCol	= pointColor2;
 			}
 		}
 
@@ -419,7 +419,7 @@ public:
 			m_models[i].m_sceneData.viewMatrix	= m_view;
 		}
 
-		// Grab the current Vulkan commandBuffer */
+		// Grab the current Vulkan commandBuffer
 		unsigned int currentBuffer;
 		vlk.GetSwapchainCurrentImage(currentBuffer);
 		VkCommandBuffer commandBuffer;
