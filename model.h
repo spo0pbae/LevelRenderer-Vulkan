@@ -140,10 +140,8 @@ public:
 		descriptorAllocInfo.descriptorPool					= m_descriptorPool;
 		descriptorAllocInfo.pNext							= nullptr;
 		m_descriptorSet.resize(_maxFrames);
-		for (int i = 0; i < _maxFrames; ++i)
-		{
+		for (int i = 0; i < _maxFrames; ++i)	
 			vkAllocateDescriptorSets(_device, &descriptorAllocInfo, &m_descriptorSet[i]);
-		}
 	}
 
 	void WriteDescriptorSet(VkDevice &_device, unsigned int _maxFrames)

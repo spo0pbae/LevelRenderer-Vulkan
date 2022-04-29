@@ -464,6 +464,7 @@ public:
 		m_levelData.modelData.clear();
 		m_levelData.modelMatrices.clear();
 		m_levelData.modelNames.clear();
+		m_levelData.pLightPos.clear();
 		m_models.clear();
 
 		// Re-initialize scene data
