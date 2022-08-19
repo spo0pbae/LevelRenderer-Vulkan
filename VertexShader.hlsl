@@ -32,10 +32,10 @@ struct SHADER_MODEL_DATA							    // Mirror SHADER_MODEL_DATA from C++
 StructuredBuffer<SHADER_MODEL_DATA> SceneData;
 
 // To get push constants to work in HLSL you have to prepend to a cbuffer
+// now the bytes that were uploaded by the push constant command should overwrite this buffer
 [[vk::push_constant]]
 cbuffer MESH_INDEX
 {
-	// now the bytes that were uploaded by the push constant command should overwrite this buffer
 	uint meshID; // should always be 0 (for use in the vertex shader)
     // uint materialID to be added in the future (for use in the pixel shader)
 };
@@ -63,7 +63,9 @@ V_OUT main(V_IN inputVertex)
     
 	// multiply stuff , set matrices to meshID
     output.projectedPos = mul(float4(inputVertex.localPos, 1), SceneData[0].matricies[0]);
-	output.posW			= output.projectedPos.xyz;	// Save the normal's world position before it gets moved into view/projection space (for normals)
+    
+    // Save the normal's world position before it gets moved into view/projection space (for normals)
+	output.posW			= output.projectedPos.xyz;	
     output.projectedPos = mul(output.projectedPos, SceneData[0].viewMatrix);
 	output.projectedPos = mul(output.projectedPos, SceneData[0].projMatrix); 
 	output.tex		    = inputVertex.tex;

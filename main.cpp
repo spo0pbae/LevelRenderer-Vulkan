@@ -21,7 +21,7 @@ using namespace CORE;
 using namespace SYSTEM;
 using namespace GRAPHICS;
 
-// Let's pop a window and use Vulkan to clear to a red screen
+// Pop a window and use Vulkan to clear to a black screen
 int main()
 {
 	GWindow win;
@@ -45,7 +45,6 @@ int main()
 		});
 		win.Register(msgs);
 
-		// If debug
 #ifndef NDEBUG
 		const char* debugLayers[] = 
 		{
@@ -80,9 +79,16 @@ int main()
 					// Unpause music
 					if (GetAsyncKeyState(VK_F3))
 						renderer.ResumeMusic();
+
+					// Exit level
+					if (GetAsyncKeyState(VK_ESCAPE))
+					{
+						renderer.CleanUp(); 
+						break;
+					}
 				}
 			}
 		}
 	}
-	return 0; // that's all folks
+	return 0;
 }

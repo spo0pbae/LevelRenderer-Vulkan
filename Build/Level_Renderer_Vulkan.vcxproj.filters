@@ -1,37 +1,37 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\main.cpp">
+    <ClCompile Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\XTime.cpp">
+    <ClCompile Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\XTime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\renderer.h">
+    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\XTime.h">
+    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\XTime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\model.h">
+    <ClInclude Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\CMakeLists.txt" />
+    <CustomBuild Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\VertexShader.hlsl" />
-    <None Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level Renderer\PixelShader.hlsl" />
+    <None Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\VertexShader.hlsl" />
+    <None Include="C:\Users\attri\OneDrive\Desktop\GDBS\Mo. 14 DEV4\Week3\Level_Renderer_Vulkan\PixelShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{72321E77-AAFD-39FB-B2C7-F1593F45F27F}</UniqueIdentifier>
+      <UniqueIdentifier>{BF272DEE-C830-3BD3-9CED-6775C8DF3CEA}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{2F2D67E5-2D11-3675-868C-7DBF52A19D54}</UniqueIdentifier>
+      <UniqueIdentifier>{0473CED5-DFC7-33B7-B3F0-FB7E6B16ED8F}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

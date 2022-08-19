@@ -70,7 +70,7 @@ public:
 		m_inputProxy.Create(win);
 		m_controllerProxy.Create();
 		m_audio.Create();
-		m_sound.Create(soundPath, m_audio, 0.005f);		// its very loud!
+		m_sound.Create(soundPath, m_audio, 0.005f);		// it's very loud!
 		m_musicProxy.Create(musicPath, m_audio, 0.005f);
 
 		/* INITIALIZE SCENE DATA */
@@ -123,9 +123,9 @@ public:
 		LoadModels(m_models, level);
 
 		// VIEW MATRIX
-		GW::MATH::GVECTORF eye { 0.75f, 2.0f,  3.0f };	// eye position
-		GW::MATH::GVECTORF at  {-0.15f, 0.75f, 0.0f };	// where it's looking
-		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };	// up direction 
+		GW::MATH::GVECTORF eye { 0.75f, 2.0f,  3.0f };
+		GW::MATH::GVECTORF at  {-0.15f, 0.75f, 0.0f };
+		GW::MATH::GVECTORF up  { 0.0f,  1.0f,  0.0f };
 		m_mxMathProxy.LookAtLHF(eye, at, up, m_view);	// this performs the inverse operation
 
 		// PROJECTION MATRIX
@@ -148,7 +148,7 @@ public:
 		m_mxMathProxy.InverseF(m_view, inverseView);
 		GW::MATH::GVECTORF camPos = inverseView.row4;
 
-		for (int i = 0; i < m_levelData.modelData.size(); i++)
+		for (int i = 0; i < m_levelData.modelData.size(); ++i)
 		{
 			// Set each model's world matrix and scene data
 			m_models[i].m_sceneData.matricies[0]		= m_levelData.modelMatrices[i];
@@ -162,7 +162,7 @@ public:
 			m_models[i].m_sceneData.lightCount			= m_levelData.pLightPos.size(); // set number of lights to size of light vector
 
 			// Point light info
-			for (int j = 0; j < m_levelData.pLightPos.size(); j++)
+			for (int j = 0; j < m_levelData.pLightPos.size(); ++j)
 			{
 				m_models[i].m_sceneData.pLightPos[j]	= m_levelData.pLightPos[j];  
 
@@ -173,10 +173,9 @@ public:
 			}
 		}
 
-		// for each model
+		// Set scenedata materials for each model/each material
 		for (auto &m : m_models)
 		{
-			// For each material in the mesh, set the scene data's materials
 			for (int i = 0; i < m.m_mesh.materialCount; ++i)
 				m.m_sceneData.materials[i] = m.m_mesh.materials[i].attrib;
 		}
@@ -411,7 +410,7 @@ public:
 	void Render()
 	{
 		// Update specular component and view matrix
-		for (int i = 0; i < m_models.size(); i++)
+		for (int i = 0; i < m_models.size(); ++i)
 		{
 			GW::MATH::GMATRIXF inverseView;
 			m_mxMathProxy.InverseF(m_view, inverseView);
@@ -596,7 +595,7 @@ public:
 	void LoadModels(std::vector<Model>& _models, std::string _gameLevelPath)
 	{
 		ParseH2B(m_levelData, _gameLevelPath);
-		for (int i = 0; i < m_levelData.modelData.size(); i++)
+		for (int i = 0; i < m_levelData.modelData.size(); ++i)
 		{
 			Model temp;
 			temp.m_mesh = m_levelData.modelData[i];
@@ -622,6 +621,24 @@ public:
 		else
 			std::cout << "ERROR: Shader Source File \"" << _shaderFilePath << "\" Not Found!" << std::endl;
 		return output;
+	}
+
+	void CleanUp()
+	{
+		// wait till everything has completed
+		vkDeviceWaitIdle(m_device);
+
+		// Clean up shaders
+		vkDestroyShaderModule(m_device, m_vertexShader, nullptr);
+		vkDestroyShaderModule(m_device, m_pixelShader, nullptr);
+
+		// Clean up vertex/index buffers, etc.
+		for (auto& m : m_models)
+			m.CleanUpModelData(m_device);
+
+		// Clean up pipeline
+		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_device, m_pipeline, nullptr);
 	}
 
 private:
@@ -662,7 +679,7 @@ private:
 			if (line == "MESH")								// check if you found mesh
 			{
 				std::getline(file, line);					// Skip name line to get to the matrix
-				for (int i = 0; i < 4; i++)					// loop through each row
+				for (int i = 0; i < 4; ++i)					// loop through each row
 				{
 					char temp[250];
 					char* getfloat;
@@ -695,7 +712,7 @@ private:
 			if (line == "LIGHT")							// if you found light
 			{
 				std::getline(file, line);					// Skip name line to get to the matrix
-				for (int i = 0; i < 4; i++)					// loop through each row
+				for (int i = 0; i < 4; ++i)					// loop through each row
 				{
 					char temp[250];
 					char* getfloat;
@@ -727,7 +744,7 @@ private:
 		} // !eof
 
 		// store actual names in mesh vector
-		for (int i = 0; i < tempNames.size(); i++)
+		for (int i = 0; i < tempNames.size(); ++i)
 		{
 			char* path = nullptr;
 			char tempPath[75];
@@ -748,23 +765,5 @@ private:
 		}
 		// All done!
 		file.close();
-	}
-
-	void CleanUp()
-	{
-		// wait till everything has completed
-		vkDeviceWaitIdle(m_device);
-
-		// Clean up shaders
-		vkDestroyShaderModule(m_device, m_vertexShader, nullptr);
-		vkDestroyShaderModule(m_device, m_pixelShader, nullptr);
-
-		// Clean up vertex/index buffers, etc.
-		for (auto & m : m_models)
-			m.CleanUpModelData(m_device);
-
-		// Clean up pipeline
-		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-		vkDestroyPipeline(m_device, m_pipeline, nullptr);
 	}
 };

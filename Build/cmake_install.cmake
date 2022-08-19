@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/attri/OneDrive/Desktop/GDBS/Mo. 14 DEV4/Week3/Level Renderer
+# Install script for directory: C:/Users/attri/OneDrive/Desktop/GDBS/Mo. 14 DEV4/Week3/Level_Renderer_Vulkan
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/Users/attri/OneDrive/Desktop/GDBS/Mo. 14 DEV4/Week3/Level Renderer/Build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/attri/OneDrive/Desktop/GDBS/Mo. 14 DEV4/Week3/Level_Renderer_Vulkan/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
